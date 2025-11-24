@@ -8,7 +8,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Navigation\NavigationBuilder;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
-use Filament\PanelServiceProvider;
+use Filament\PanelProvider; // <--- ini yang benar
 use Filament\Support\Colors\Color;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -18,7 +18,7 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-class AdminPanelProvider extends PanelServiceProvider
+class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
@@ -26,7 +26,7 @@ class AdminPanelProvider extends PanelServiceProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login() // atau ->authGuard('web') sesuai setelanmu
+            ->login()
             ->colors([
                 'primary' => Color::Sky,
             ])
@@ -43,8 +43,8 @@ class AdminPanelProvider extends PanelServiceProvider
                 for: 'App\\Filament\\Widgets',
             )
             ->widgets([
-                AgendaStatsOverview::class,   // ✅ koma di sini
-                AgendaPerHariChart::class,    // ✅ tidak ada panah / method lagi di sini
+                AgendaStatsOverview::class,
+                AgendaPerHariChart::class,
             ])
             ->navigation(function (NavigationBuilder $navigation): NavigationBuilder {
                 return $navigation
