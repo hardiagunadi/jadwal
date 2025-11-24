@@ -5,8 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Widgets\AgendaPerHariChart;
 use App\Filament\Widgets\AgendaStatsOverview;
 use Filament\Http\Middleware\Authenticate;
-use Filament\Navigation\NavigationBuilder;
-use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Pages\Dashboard;
@@ -26,8 +25,8 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')    // semua URL panel di bawah /admin
-            ->login()          // gunakan login bawaan Filament v4
+            ->path('admin')
+            ->login()
             ->colors([
                 'primary' => Color::Sky,
             ])
@@ -40,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 for: 'App\\Filament\\Pages',
             )
             ->pages([
-                Dashboard::class, // dashboard bawaan Filament
+                Dashboard::class,
             ])
             ->discoverWidgets(
                 in: app_path('Filament/Widgets'),
@@ -50,17 +49,17 @@ class AdminPanelProvider extends PanelProvider
                 AgendaStatsOverview::class,
                 AgendaPerHariChart::class,
             ])
-            ->navigation(function (NavigationBuilder $navigation): NavigationBuilder {
-                return $navigation
-                    ->groups([
-                        NavigationGroup::make('Manajemen Kegiatan')
-                            ->icon('heroicon-o-calendar-days'),
-                        NavigationGroup::make('Master Data')
-                            ->icon('heroicon-o-archive-box'),
-                        NavigationGroup::make('Pengaturan')
-                            ->icon('heroicon-o-cog-6-tooth'),
-                    ]);
-            })
+
+            // ⬇️ TAMBAHAN: item menu khusus ke dashboard publik
+            ->navigationItems([
+                NavigationItem::make('Agenda Publik')
+                    ->url(url('/agenda-kegiatan'))   // link ke dashboard publik
+                    ->icon('heroicon-o-globe-alt')
+                    ->group('Halaman Publik')        // akan muncul sebagai grup di sidebar
+                    ->sort(100),
+            ])
+
+            // ⬇️ sisanya biarkan standar
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
