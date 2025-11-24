@@ -10,9 +10,7 @@ use Filament\Widgets\StatsOverviewWidget\Card;
 
 class AgendaStatsOverview extends StatsOverviewWidget
 {
-    // Di Filament v4 kamu, pollingInterval di parent NON static,
-    // jadi kita tidak deklar ulang sebagai static di sini.
-
+    // NON-static di Filament v4
     protected ?string $heading = 'Ringkasan Agenda Kegiatan';
 
     protected function getCards(): array
@@ -57,12 +55,9 @@ class AgendaStatsOverview extends StatsOverviewWidget
         ];
     }
 
-    /**
-     * Atur auto refresh (polling) untuk widget ini.
-     * Ini cara yang aman untuk Filament v4 tanpa bentrok properti parent.
-     */
+    // Polling interval (auto refresh) VERSI METHOD, BUKAN PROPERTY STATIC
     protected function getPollingInterval(): ?string
     {
-        return '30s'; // refresh tiap 30 detik
+        return '30s';
     }
 }

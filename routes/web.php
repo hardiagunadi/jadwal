@@ -26,4 +26,8 @@ Route::view('/pengingat-audio', 'pengingat.audio')
 	
 Route::get('/u/{kegiatan}', [KegiatanSuratController::class, 'show'])
     ->name('kegiatan.surat.short');
+	
+Route::get('/login', function () {
+    return redirect()->route('filament.admin.auth.login');
+})->name('login');
 
