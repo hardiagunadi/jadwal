@@ -20,10 +20,12 @@ class Kegiatan extends Model
         'tempat',
         'keterangan',
 		'surat_undangan',   // <--- TAMBAHKAN
+		'sudah_disposisi',   // <--- baru
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'sudah_disposisi' => 'boolean',   // <--- baru
     ];
 
     public function personils()

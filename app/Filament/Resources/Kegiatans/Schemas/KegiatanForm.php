@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Resources\Kegiatans\Schemas;
+use Filament\Forms\Components\Toggle;
 
 use App\Services\NomorSuratExtractor;
 use Filament\Forms\Components\DatePicker;
@@ -82,7 +83,11 @@ class KegiatanForm
                             ->label('Tempat')
                             ->required()
                             ->maxLength(255),
-
+						Toggle::make('sudah_disposisi')
+							->label('Sudah Disposisi Pimpinan?')
+							->helperText('Centang jika surat undangan sudah mendapatkan disposisi pimpinan.')
+							->default(false),
+							
                         Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->rows(3),

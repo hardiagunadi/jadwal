@@ -224,10 +224,68 @@ class KegiatansTable
                         })
                         ->deselectRecordsAfterCompletion()
                         ->tooltip('Gunakan semua data yang sedang tampil di tabel (berdasarkan filter & pencarian).')
-                        ,
+                     //baru   ,
+					BulkAction::make('kirim_wa_belum_disposisi')
+					->label('Kirim WA Agenda Belum Disposisi (Filter)')
+					->icon('heroicon-o-paper-airplane')
+					->requiresConfirmation()
+					->modalHeading('Kirim ke grup WhatsApp daftar agenda yang belum disposisi (berdasarkan filter saat ini)?')
+					->action(function (array $data, $livewire) {
+						if (! method_exists($livewire, 'getFilteredSortedTableQuery')) {
+							Notification::make()
+								->title('Gagal')
+								->body('Tidak dapat mengambil data terfilter dari tabel.')
+								->danger()
+								->send();
 
-                    DeleteBulkAction::make(),
-                ]),
+							return;
+						}
+
+						/** @var Builder $query */
+						$query = clone $livewire->getFilteredSortedTableQuery();
+
+						// Hanya ambil yang BELUM disposisi
+						$query->where('sudah_disposisi', false);
+
+						/** @var Collection $records */
+						$records = $query->get();
+
+						if ($records->isEmpty()) {
+							Notification::make()
+								->title('Tidak ada data')
+								->body('Tidak ada agenda berstatus belum disposisi pada filter saat ini.')
+								->warning()
+								->send();
+
+							return;
+						}
+
+						$records->load('personils'); // tidak wajib, tapi kalau mau pakai nanti aman
+
+						/** @var WablasService $wablas */
+						$wablas = app(WablasService::class);
+
+						$success = $wablas->sendGroupBelumDisposisi($records);
+
+						if ($success) {
+							Notification::make()
+								->title('Berhasil')
+								->body('Daftar agenda yang belum disposisi berhasil dikirim ke grup WhatsApp.')
+								->success()
+								->send();
+						} else {
+							Notification::make()
+								->title('Gagal')
+								->body('Gagal mengirim pesan ke Wablas. Cek konfigurasi/token/ID grup.')
+								->danger()
+								->send();
+						}
+					})
+					->deselectRecordsAfterCompletion()
+					->tooltip('Mengirim ke grup WA daftar agenda yang belum disposisi, berdasarkan filter & pencarian saat ini.'),
+								  
+				  DeleteBulkAction::make(),
+                ]),	
             ]);
     }
 }

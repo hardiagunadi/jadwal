@@ -143,7 +143,57 @@ class WablasService
 
 		return implode("\n", $messageLines);
 	}
+	/**
+	 * Kirim ke grup WA: daftar agenda yang BELUM disposisi.
+	 *
+	 * @param iterable<Kegiatan> $kegiatans
+	 */
+	protected function buildGroupMessageBelumDisposisi(iterable $kegiatans): string
+	{
+		$items = $kegiatans instanceof Collection ? $kegiatans : collect($kegiatans);
+		$items = $items->sortBy('tanggal');
 
+		$lines = [];
+
+		$lines[] = '*AGENDA MENUNGGU DISPOSISI PIMPINAN*';
+		$lines[] = '';
+		$lines[] = 'Berikut daftar kegiatan yang belum mendapatkan disposisi pimpinan:';
+		$lines[] = '';
+
+		$no = 1;
+
+		/** @var \App\Models\Kegiatan $kegiatan */
+		foreach ($items as $kegiatan) {
+			if ($no > 1) {
+				$lines[] = '────────────────────────';
+			}
+
+			$lines[] = '*' . $no . '. ' . ($kegiatan->nama_kegiatan ?? '-') . '*';
+			$lines[] = '🆔 *Nomor Surat* : ' . ($kegiatan->nomor ?? '-');
+			$lines[] = '⏰ *Waktu*       : ' . ($kegiatan->waktu ?? '-');
+			$lines[] = '📍 *Tempat*      : ' . ($kegiatan->tempat ?? '-');
+
+			$suratUrl = $this->getSuratUrl($kegiatan->surat_undangan ?? null);
+			if ($suratUrl) {
+				$lines[] = '📎 *Surat Undangan (PDF)*';
+				$lines[] = $suratUrl;
+			}
+
+			$lines[] = ''; // spasi antar kegiatan
+			$no++;
+		}
+
+		if ($no === 1) {
+			$lines[] = '_Tidak ada agenda yang berstatus menunggu disposisi._';
+		} else {
+			$lines[] = '_Mohon tindak lanjut disposisi sesuai kewenangan._';
+		}
+
+		$lines[] = '';
+		$lines[] = '_Pesan ini dikirim otomatis dari sistem agenda kantor._';
+
+		return implode("\n", $lines);
+	}
 /**
  * Format pesan khusus utk 1 kegiatan ke WA personil.
  */
