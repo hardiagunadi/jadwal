@@ -5,15 +5,18 @@ namespace App\Filament\Widgets;
 use App\Models\Kegiatan;
 use App\Models\Personil;
 use Carbon\Carbon;
-use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\StatsOverviewWidget\Card;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class AgendaStatsOverview extends StatsOverviewWidget
+class AgendaStatsOverview extends BaseWidget
 {
-    // NON-static di Filament v4
+    // Judul widget di dashboard
     protected ?string $heading = 'Ringkasan Agenda Kegiatan';
 
-    protected function getCards(): array
+    /**
+     * Filament v4: gunakan getStats() dan Stat::make()
+     */
+    protected function getStats(): array
     {
         $today       = Carbon::today();
         $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
@@ -28,36 +31,38 @@ class AgendaStatsOverview extends StatsOverviewWidget
         $totalPersonil        = Personil::count();
 
         return [
-            Card::make('Agenda Hari Ini', $agendaHariIni)
+            Stat::make('Agenda Hari Ini', $agendaHariIni)
                 ->description('Kegiatan pada hari ini')
                 ->descriptionIcon('heroicon-o-calendar-days')
                 ->color($agendaHariIni > 0 ? 'success' : 'gray'),
 
-            Card::make('Belum Disposisi', $agendaBelumDisposisi)
+            Stat::make('Belum Disposisi', $agendaBelumDisposisi)
                 ->description('Menunggu disposisi pimpinan')
                 ->descriptionIcon('heroicon-o-exclamation-triangle')
                 ->color($agendaBelumDisposisi > 0 ? 'warning' : 'success'),
 
-            Card::make('Agenda 7 Hari ke Depan', $agenda7HariKeDepan)
+            Stat::make('Agenda 7 Hari ke Depan', $agenda7HariKeDepan)
                 ->description('Termasuk hari ini')
                 ->descriptionIcon('heroicon-o-forward')
                 ->color($agenda7HariKeDepan > 0 ? 'info' : 'gray'),
 
-            Card::make('Total Agenda', $totalAgenda)
+            Stat::make('Total Agenda', $totalAgenda)
                 ->description('Semua agenda terdata')
                 ->descriptionIcon('heroicon-o-archive-box')
                 ->color('gray'),
 
-            Card::make('Total Personil', $totalPersonil)
+            Stat::make('Total Personil', $totalPersonil)
                 ->description('Personil yang terdaftar')
                 ->descriptionIcon('heroicon-o-user-group')
                 ->color('gray'),
         ];
     }
 
-    // Polling interval (auto refresh) VERSI METHOD, BUKAN PROPERTY STATIC
+    /**
+     * Auto refresh (polling) – cara aman untuk Filament v4
+     */
     protected function getPollingInterval(): ?string
     {
-        return '30s';
+        return '30s'; // refresh tiap 30 detik
     }
 }
