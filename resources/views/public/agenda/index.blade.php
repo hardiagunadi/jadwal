@@ -159,7 +159,7 @@
                                         <a href="{{ \Illuminate\Support\Facades\URL::to(\Illuminate\Support\Facades\Storage::disk('public')->url($kegiatan->surat_undangan)) }}"
                                            target="_blank"
                                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-medium shadow-sm">
-                                            📎 Lihat Surat Undangan (PDF)
+                                            📎 Lihat Surat (PDF)
                                         </a>
                                     </div>
                                 @endif
