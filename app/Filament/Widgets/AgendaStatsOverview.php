@@ -10,12 +10,14 @@ use Filament\Widgets\StatsOverviewWidget\Card;
 
 class AgendaStatsOverview extends StatsOverviewWidget
 {
-    // Optional: auto refresh tiap 30 detik
-    protected static ?string $pollingInterval = '30s';
+    // Di Filament v4 kamu, pollingInterval di parent NON static,
+    // jadi kita tidak deklar ulang sebagai static di sini.
+
+    protected ?string $heading = 'Ringkasan Agenda Kegiatan';
 
     protected function getCards(): array
     {
-        $today = Carbon::today();
+        $today       = Carbon::today();
         $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
         $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
         $in7Days     = $today->copy()->addDays(7);
@@ -53,5 +55,14 @@ class AgendaStatsOverview extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-o-user-group')
                 ->color('gray'),
         ];
+    }
+
+    /**
+     * Atur auto refresh (polling) untuk widget ini.
+     * Ini cara yang aman untuk Filament v4 tanpa bentrok properti parent.
+     */
+    protected function getPollingInterval(): ?string
+    {
+        return '30s'; // refresh tiap 30 detik
     }
 }
