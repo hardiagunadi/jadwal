@@ -50,16 +50,23 @@ class AdminPanelProvider extends PanelProvider
                 AgendaPerHariChart::class,
             ])
 
-            // ⬇️ TAMBAHAN: item menu khusus ke dashboard publik
+            // Link-link tambahan di sidebar
             ->navigationItems([
+                // Beranda utama website
+                NavigationItem::make('Beranda Website')
+                    ->url(url('/'), shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-home')
+                    ->group('Halaman Publik')
+                    ->sort(90),
+
+                // Dashboard agenda publik
                 NavigationItem::make('Agenda Publik')
-                    ->url(url('/agenda-kegiatan'))   // link ke dashboard publik
+                    ->url(url('/agenda-kegiatan'), shouldOpenInNewTab: true)
                     ->icon('heroicon-o-globe-alt')
-                    ->group('Halaman Publik')        // akan muncul sebagai grup di sidebar
+                    ->group('Halaman Publik')
                     ->sort(100),
             ])
 
-            // ⬇️ sisanya biarkan standar
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
