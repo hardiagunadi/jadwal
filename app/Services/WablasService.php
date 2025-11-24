@@ -56,6 +56,7 @@ class WablasService
 
     /**
      * Buat URL publik ke surat undangan (PDF) di storage/public.
+     * (Masih disimpan kalau suatu saat ingin pakai direct link.)
      */
     protected function getSuratUrl(?string $path): ?string
     {
@@ -68,6 +69,19 @@ class WablasService
 
         // jadikan absolute URL: https://domainmu/storage/...
         return URL::to($relativeUrl);
+    }
+
+    /**
+     * Short-link ke surat undangan per kegiatan, misal: https://domain/u/5
+     */
+    protected function getShortSuratUrl(?Kegiatan $kegiatan): ?string
+    {
+        if (! $kegiatan || ! $kegiatan->surat_undangan) {
+            return null;
+        }
+
+        // route('kegiatan.surat.short', ['kegiatan' => {id}])
+        return URL::route('kegiatan.surat.short', ['kegiatan' => $kegiatan->id]);
     }
 
     /**
@@ -126,8 +140,8 @@ class WablasService
                 $lines[] = $kegiatan->keterangan;
             }
 
-            // Link surat undangan
-            $suratUrl = $this->getSuratUrl($kegiatan->surat_undangan ?? null);
+            // Short-link surat undangan
+            $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {
                 $lines[] = '📎 *Surat Undangan (PDF)*:';
                 $lines[] = $suratUrl;
@@ -145,7 +159,7 @@ class WablasService
     /**
      * Format pesan ringkas untuk agenda yang BELUM disposisi.
      *
-     * Hanya menampilkan: nomor surat, nama kegiatan, waktu, tempat, link surat.
+     * Hanya menampilkan: nomor surat, nama kegiatan, waktu, tempat, short-link surat.
      *
      * @param iterable<Kegiatan> $kegiatans
      */
@@ -174,7 +188,7 @@ class WablasService
             $lines[] = '⏰ *Waktu*       : ' . ($kegiatan->waktu ?? '-');
             $lines[] = '📍 *Tempat*      : ' . ($kegiatan->tempat ?? '-');
 
-            $suratUrl = $this->getSuratUrl($kegiatan->surat_undangan ?? null);
+            $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {
                 $lines[] = '📎 *Surat Undangan (PDF)*';
                 $lines[] = $suratUrl;
@@ -233,8 +247,8 @@ class WablasService
             $lines[] = '';
         }
 
-        // Link surat undangan kalau ada
-        $suratUrl = $this->getSuratUrl($kegiatan->surat_undangan ?? null);
+        // Short-link surat undangan kalau ada
+        $suratUrl = $this->getShortSuratUrl($kegiatan);
         if ($suratUrl) {
             $lines[] = '📎 *Surat Undangan (PDF)*';
             $lines[] = $suratUrl;

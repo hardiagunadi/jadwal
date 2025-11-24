@@ -20,4 +20,7 @@ Route::get('/agenda-kegiatan-tv', [PublicKegiatanController::class, 'tv'])
 
 Route::view('/pengingat-audio', 'pengingat.audio')
     ->name('pengingat.audio');
+	
+Route::get('/u/{kegiatan}', [KegiatanSuratController::class, 'show'])
+    ->name('kegiatan.surat.short');
 
