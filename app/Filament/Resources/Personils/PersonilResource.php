@@ -78,7 +78,7 @@ class PersonilResource extends Resource
                         ->send();
                 })
                 ->modalHeading('Import Personil dari Excel')
-                ->modalSubmitLabel('Import')
+                ->modalSubmitActionLabel('Import')   // ⬅️ ini yang benar di Filament v4
                 ->modalWidth('md'),
         ]);
     }
