@@ -9,14 +9,8 @@ use Filament\Widgets\ChartWidget;
 
 class AgendaPerHariChart extends ChartWidget
 {
-    // DI VERSI FILAMENT KAMU: heading HARUS non-static
+    // DI FILAMENT V4: heading adalah properti non-static
     protected ?string $heading = 'Jumlah Agenda per Hari (14 Hari Terakhir)';
-
-    // Urutan tampil di dashboard (boleh static)
-    protected static ?int $sort = 20;
-
-    // Auto refresh tiap 60 detik (boleh static)
-    protected static ?string $pollingInterval = '60s';
 
     protected function getData(): array
     {
@@ -52,7 +46,7 @@ class AgendaPerHariChart extends ChartWidget
                 [
                     'label' => 'Jumlah Agenda',
                     'data'  => $data,
-                    // warna default Chart.js / Filament
+                    // warna default Chart.js / Filament (tidak perlu diatur)
                 ],
             ],
             'labels' => $labels,
@@ -62,5 +56,14 @@ class AgendaPerHariChart extends ChartWidget
     protected function getType(): string
     {
         return 'bar'; // bisa diganti 'line' kalau mau
+    }
+
+    /**
+     * Override cara Filament menentukan polling interval (auto refresh).
+     * Ini lebih aman daripada pakai properti $pollingInterval yang bentrok.
+     */
+    protected function getPollingInterval(): ?string
+    {
+        return '60s'; // refresh tiap 60 detik
     }
 }
