@@ -119,8 +119,8 @@ class WablasService
             // Detail utama
             $lines[] = '🆔 *Nomor Surat*  : ' . ($kegiatan->nomor ?? '-');
             $lines[] = '📅 *Hari/Tanggal* : ' . ($kegiatan->tanggal_label ?? '-');
-            $lines[] = '⏰ *Waktu*               : ' . ($kegiatan->waktu ?? '-');
-            $lines[] = '📍 *Tempat*             : ' . ($kegiatan->tempat ?? '-');
+            $lines[] = '⏰ *Waktu*              : ' . ($kegiatan->waktu ?? '-');
+            $lines[] = '📍 *Tempat*            : ' . ($kegiatan->tempat ?? '-');
 
             // Personil
             $personils = $kegiatan->personils ?? collect();
