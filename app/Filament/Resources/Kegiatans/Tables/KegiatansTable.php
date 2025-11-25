@@ -171,7 +171,7 @@ class KegiatansTable
                 BulkActionGroup::make([
                     // Bulk: kirim semua yang SEDANG tampil (sesuai filter/search/sort)
                     BulkAction::make('kirim_wa_rekap_terfilter')
-                        ->label('Kirim Rekap WA (Sesuai Filter)')
+                        ->label('Kirim Rekap Disposisi (Sesuai Filter)')
                         ->icon('heroicon-o-paper-airplane')
                         ->requiresConfirmation()
                         ->modalHeading('Kirim rekap semua agenda yang sedang tampil (berdasarkan filter) ke grup WhatsApp?')
@@ -226,7 +226,7 @@ class KegiatansTable
                         ->tooltip('Gunakan semua data yang sedang tampil di tabel (berdasarkan filter & pencarian).'),
                      //baru   ,
 					BulkAction::make('kirim_wa_belum_disposisi')
-					->label('Kirim WA Agenda Belum Disposisi (Filter)')
+					->label('Mohon Disposisi (Filter)')
 					->icon('heroicon-o-paper-airplane')
 					->requiresConfirmation()
 					->modalHeading('Kirim ke grup WhatsApp daftar agenda yang belum disposisi (berdasarkan filter saat ini)?')
