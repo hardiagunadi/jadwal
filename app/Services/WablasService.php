@@ -119,19 +119,43 @@ class WablasService
             // Detail utama
             $lines[] = '🆔 *Nomor Surat*  : ' . ($kegiatan->nomor ?? '-');
             $lines[] = '📅 *Hari/Tanggal* : ' . ($kegiatan->tanggal_label ?? '-');
-            $lines[] = '⏰ *Waktu*        : ' . ($kegiatan->waktu ?? '-');
-            $lines[] = '📍 *Tempat*       : ' . ($kegiatan->tempat ?? '-');
+            $lines[] = '⏰ *Waktu*               : ' . ($kegiatan->waktu ?? '-');
+            $lines[] = '📍 *Tempat*             : ' . ($kegiatan->tempat ?? '-');
 
             // Personil
             $personils = $kegiatan->personils ?? collect();
             if ($personils->isNotEmpty()) {
-                $lines[] = '👥 *Personil Hadir*:';
+                $lines[] = '👥 *Pegawai yang ditugaskan*:';
+
+                $mentionTags = [];
+
                 foreach ($personils as $p) {
                     $jabatan = $p->jabatan ? ' (' . $p->jabatan . ')' : '';
                     $lines[] = '   • ' . $p->nama . $jabatan;
+
+                    // Tambah tag nomor WA (jika ada)
+                    $rawNo = trim((string) ($p->no_wa ?? ''));
+                    if ($rawNo !== '') {
+                        // Hapus karakter non angka
+                        $digits = preg_replace('/[^0-9]/', '', $rawNo) ?? '';
+
+                        if ($digits !== '') {
+                            // Normalisasi: 08xxxxx -> 628xxxxx
+                            if (substr($digits, 0, 1) === '0') {
+                                $digits = '62' . substr($digits, 1);
+                            }
+                            // Kalau sudah 62xxxxx dibiarkan
+                            $mentionTags[] = '@' . $digits;
+                        }
+                    }
+                }
+
+                if (! empty($mentionTags)) {
+                    // Baris khusus tag personil
+                    $lines[] = '🔔 Notifikasi: ' . implode(' ', $mentionTags);
                 }
             } else {
-                $lines[] = '👥 *Personil Hadir*: -';
+                $lines[] = '👥 *Pegawai yang ditugaskan*: -';
             }
 
             // Keterangan
