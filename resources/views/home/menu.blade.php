@@ -70,7 +70,7 @@
                 </a>
 
                 {{-- Kartu: Agenda Kegiatan Publik --}}
-                <a href="{{ route('agenda.kegiatan.public') }}"
+                <a href="{{ route('public.agenda.index') }}"
                    class="group bg-white/90 border border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition p-5 flex flex-col">
                     <div class="flex items-center justify-between mb-3">
                         <div class="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
