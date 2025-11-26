@@ -89,7 +89,7 @@ class WablasService
      *
      * @param iterable<Kegiatan> $kegiatans
      */
-        protected function buildGroupMessage(iterable $kegiatans): string
+    protected function buildGroupMessage(iterable $kegiatans): string
     {
         $items = $kegiatans instanceof Collection ? $kegiatans : collect($kegiatans);
         $items = $items->sortBy('tanggal');
@@ -172,6 +172,12 @@ class WablasService
                 }
             } else {
                 $lines[] = '👥 -';
+            }
+
+            // ➕ KETERANGAN (JIKA ADA)
+            $keterangan = trim((string) ($kegiatan->keterangan ?? ''));
+            if ($keterangan !== '') {
+                $lines[] = '📝 ' . $keterangan;
             }
 
             // Short-link surat undangan
