@@ -19,6 +19,11 @@ class PersonilForm
                             ->label('Nama')
                             ->required()
                             ->maxLength(255),
+						
+						TextInput::make('nip')
+							->label('NIP')
+							->maxLength(30)
+							->nullable(),
 
                         TextInput::make('jabatan')
                             ->label('Jabatan')

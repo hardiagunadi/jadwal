@@ -20,7 +20,11 @@ class PersonilsTable
                     ->sortable()
                     ->wrap(),
 
-                TextColumn::make('jabatan')
+                TextColumn::make('nip')
+                    ->label('NIP')
+                    ->searchable(),
+					
+				TextColumn::make('jabatan')
                     ->label('Jabatan')
                     ->searchable()
                     ->sortable(),
