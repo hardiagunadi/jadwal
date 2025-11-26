@@ -20,6 +20,12 @@
             font-size: 12px !important;
         }
 
+        /* Khusus judul kop: font 14 bold */
+        .kop-title {
+            font-size: 14px !important;
+            font-weight: bold !important;
+        }
+
         /* Hilangkan warna background (layar & print) */
         body,
         .fi-main,
@@ -81,10 +87,20 @@
             text-align: center;
         }
 
+        /* Footer (hanya muncul saat print) */
+        .print-footer {
+            display: none;
+        }
+
         @media print {
             @page {
                 size: A4 landscape;
                 margin: 10mm;
+                counter-increment: page;
+            }
+
+            body {
+                counter-reset: page;
             }
 
             /* SEMUA elemen disembunyikan dulu */
@@ -106,6 +122,7 @@
                 box-shadow: none !important;
                 border: none !important;
                 background: transparent !important; /* tanpa warna saat print */
+                padding-bottom: 25mm; /* ruang untuk footer */
             }
 
             /* Elemen yang memang tidak perlu tercetak (filter, tombol, dsb) */
@@ -123,42 +140,72 @@
             .kop-garis {
                 border-bottom: 2px solid #000000 !important;
             }
+
+            /* Footer tampil di setiap halaman, posisi bawah */
+            .print-footer {
+                display: flex;
+                position: fixed;
+                bottom: 8mm;
+                left: 10mm;
+                right: 10mm;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 10px !important;
+            }
+
+            .print-footer .page-number::before {
+                /* browser modern: Halaman x dari y */
+                content: "Halaman " counter(page) " dari " counter(pages);
+            }
+			
+			/* Bar filter bulan + tombol cetak */
+			.filter-bar {
+				display: flex;
+				justify-content: center;
+				margin-bottom: 1rem;
+			}
+
         }
     </style>
 
-    {{-- FILTER & TOMBOL CETAK (TIDAK IKUT TERCETAK) --}}
-    <div class="no-print mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div class="flex flex-col gap-2 md:flex-row md:items-end" align="center">
-            <div>
-                <label for="bulan" class="block text-xs font-s text-gray-600 mb-1" >
-                    Bulan rekap
-                </label>
-                <input 
-                    id="bulan"
-                    type="month"
-                    wire:model.live="bulan"
-                    class="fi-input block w-32 rounded-lg border-gray-300 text-sm shadow-sm
-                           focus:border-primary-500 focus:ring-primary-500"
-                />
-            </div>
-			
-            <button
-                type="button"
-                onclick="window.print()"
-                class="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary-700 bg-primary-700
-                       px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-primary-800
-                       focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 md:mt-0"
-            >
-                {{-- Icon print (SVG) --}}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                          d="M6 9V4h12v5M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12 0v3h12v-3M9 13h6" />
-                </svg>
-                <span>Cetak Laporan</span>
-            </button>
+{{-- FILTER & TOMBOL CETAK (TIDAK IKUT TERCETAK) --}}
+<div class="no-print mb-4" style="text-align: center;">
+    <div style="display: inline-flex; align-items: flex-end; gap: 10px;">
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <label for="bulan" style="font-size: 11px; color: #4b5563; margin-bottom: 2px;">
+                Bulan rekap
+            </label>
+            <input
+                id="bulan"
+                type="month"
+                wire:model.live="bulan"
+                style="width: 180px; height: 32px; font-size: 12px; padding: 2px 6px;
+                       border-radius: 0.5rem; border: 1px solid #d1d5db;"
+                class="focus:border-primary-500 focus:ring-primary-500"
+            />
         </div>
+
+        <button
+            type="button"
+            onclick="window.print()"
+            style="display: inline-flex; align-items: center; gap: 6px;
+                   border-radius: 0.5rem; border: 1px solid #1d4ed8;
+                   background-color: #1d4ed8; padding: 6px 14px;
+                   font-size: 12px; font-weight: 600; color: #ffffff;
+                   box-shadow: 0 2px 4px rgba(0,0,0,0.2); cursor: pointer;"
+            class="hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        >
+            {{-- Icon print (SVG) --}}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                      d="M6 9V4h12v5M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12 0v3h12v-3M9 13h6" />
+            </svg>
+            <span>Cetak Laporan</span>
+        </button>
     </div>
+</div>
+
 
     {{-- AREA CETAK --}}
     <div class="print-area p-4 md:p-6">
@@ -178,10 +225,10 @@
 
                     {{-- Teks kop rata tengah --}}
                     <td class="kop-judul" style="vertical-align: top;">
-                        <div class="font-semibold uppercase">
+                        <div class="kop-title uppercase">
                             PEMERINTAH KABUPATEN WONOSOBO
                         </div>
-                        <div class="font-semibold uppercase">
+                        <div class="kop-title uppercase">
                             KECAMATAN WATUMALANG
                         </div>
                         <div class="mt-1">
@@ -296,6 +343,14 @@
                     </div>
                 @endif
             </div>
+        </div>
+
+        {{-- FOOTER CETAK --}}
+        <div class="print-footer">
+            <div>
+                Dicetak dari: {{ config('app.url') }}
+            </div>
+            <div class="page-number"></div>
         </div>
     </div>
 </x-filament-panels::page>
