@@ -269,7 +269,7 @@
                         <th class="text-center align-middle">Tempat</th>
                         <th class="text-center align-middle">Keterangan</th>
                         <th class="text-center align-middle">
-                            Personil yang mendapat disposisi
+                            Personil yang Hadir
                         </th>
                         <th class="text-center align-middle">Paraf</th>
                     </tr>
