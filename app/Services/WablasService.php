@@ -85,6 +85,49 @@ class WablasService
         return URL::route('kegiatan.surat.short', ['kegiatan' => $kegiatan->id]);
     }
 
+    /**
+     * Normalisasi nomor WA agar bisa ditag di pesan grup.
+     */
+    protected function formatMention(?string $number): ?string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) ($number ?? '')) ?? '';
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62' . substr($digits, 1);
+        }
+
+        return '@' . $digits;
+    }
+
+    /**
+     * Ambil tag WA Camat & Sekretaris Kecamatan untuk arahan disposisi.
+     */
+    protected function getDispositionTags(): array
+    {
+        $tags = [];
+
+        $targets = [
+            ['number' => config('wablas.camat_wa'), 'label' => 'Camat'],
+            ['number' => config('wablas.sekcam_wa'), 'label' => 'Sekretaris Kecamatan'],
+        ];
+
+        foreach ($targets as $target) {
+            $mention = $this->formatMention($target['number']);
+
+            if (! $mention) {
+                continue;
+            }
+
+            $tags[] = $mention . ' (' . $target['label'] . ')';
+        }
+
+        return $tags;
+    }
+
 
 	 /**
 	 * Format pesan rekap untuk banyak kegiatan (untuk grup WA).
@@ -223,6 +266,11 @@ class WablasService
 
         $lines[] = '*AGENDA MENUNGGU DISPOSISI PIMPINAN*';
         $lines[] = '';
+        $dispositionTags = $this->getDispositionTags();
+        if (! empty($dispositionTags)) {
+            $lines[] = 'Arahan disposisi: ' . implode(' ', $dispositionTags) . '.';
+            $lines[] = '';
+        }
         $lines[] = 'Berikut daftar kegiatan yang belum mendapatkan disposisi pimpinan:';
         $lines[] = '';
 
@@ -239,7 +287,7 @@ class WablasService
             $lines[] = ' *Tanggal*     : ' . ($kegiatan->tanggal_label ?? '-');
             $lines[] = ' *Waktu*       : ' . ($kegiatan->waktu ?? '-');
             $lines[] = ' *Tempat*      : ' . ($kegiatan->tempat ?? '-');
-			$lines[] = '';
+			      $lines[] = '';
             $lines[] = '';
             $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {

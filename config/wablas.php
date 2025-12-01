@@ -5,4 +5,5 @@ return [
     'token'      => env('WABLAS_TOKEN', ''),
     'secret_key' => env('WABLAS_SECRET_KEY', ''),
     'group_id'   => env('WABLAS_GROUP_ID', ''),
+
 ];
