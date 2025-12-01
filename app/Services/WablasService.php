@@ -235,9 +235,11 @@ class WablasService
 
             $lines[] = '*' . $no . '. ' . ($kegiatan->nama_kegiatan ?? '-') . '*';
             //$lines[] = '🆔 *Nomor Surat* : ' . ($kegiatan->nomor ?? '-');
+            $lines[] = ' *Tanggal*     : ' . ($kegiatan->tanggal_label ?? '-');
             $lines[] = ' *Waktu*       : ' . ($kegiatan->waktu ?? '-');
             $lines[] = ' *Tempat*      : ' . ($kegiatan->tempat ?? '-');
 			$lines[] = '';
+            $lines[] = '';
             $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {
                 $lines[] = '📎 *Surat Undangan (PDF)*';
