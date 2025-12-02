@@ -13,7 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Get;
+use Filament\Forms\Get as FormsGet;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -45,8 +45,8 @@ class KegiatanForm
                         DateTimePicker::make('batas_tindak_lanjut')
                             ->label('Batas Waktu Tindak Lanjut')
                             ->seconds(false)
-                            ->visible(fn (Get $get) => $get('jenis_surat') === 'tindak_lanjut')
-                            ->required(fn (Get $get) => $get('jenis_surat') === 'tindak_lanjut')
+                            ->visible(fn (FormsGet $get) => $get('jenis_surat') === 'tindak_lanjut')
+                            ->required(fn (FormsGet $get) => $get('jenis_surat') === 'tindak_lanjut')
                             ->helperText('Wajib diisi untuk surat masuk yang harus ditindaklanjuti.'),
 
                         FileUpload::make('surat_undangan')
