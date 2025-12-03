@@ -1,4 +1,4 @@
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '/vendor/filament/support/resources/css/theme.css';
 
 /* Narrower sidebar for the Filament admin panel */
 .fi-layout {
