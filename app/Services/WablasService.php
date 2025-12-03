@@ -34,8 +34,6 @@ class WablasService
 
     protected function getAuthHeaderValue(): string
     {
-        // Kalau secret key diisi, pakai "token.secret"
-        // Kalau tidak, pakai token saja (beberapa device Solo Wablas pakai ini)
         if (! empty($this->secretKey)) {
             return $this->token . '.' . $this->secretKey;
         }
@@ -50,44 +48,30 @@ class WablasService
                 'Content-Type'  => 'application/json',
             ])
             ->withOptions([
-                // kalau SSL sudah rapi, boleh dihapus verify=false
                 'verify' => false,
             ]);
     }
 
-    /**
-     * Buat URL publik ke surat undangan (PDF) di storage/public.
-     * (Masih disimpan kalau suatu saat ingin pakai direct link.)
-     */
     protected function getSuratUrl(?string $path): ?string
     {
         if (empty($path)) {
             return null;
         }
 
-        // path relatif di disk 'public' -> /storage/...
         $relativeUrl = Storage::disk('public')->url($path);
 
-        // jadikan absolute URL: https://domainmu/storage/...
         return URL::to($relativeUrl);
     }
 
-    /**
-     * Short-link ke surat undangan per kegiatan, misal: https://domain/u/5
-     */
     protected function getShortSuratUrl(?Kegiatan $kegiatan): ?string
     {
         if (! $kegiatan || ! $kegiatan->surat_undangan) {
             return null;
         }
 
-        // route('kegiatan.surat.short', ['kegiatan' => {id}])
         return URL::route('kegiatan.surat.short', ['kegiatan' => $kegiatan->id]);
     }
 
-    /**
-     * Normalisasi nomor WA agar bisa ditag di pesan grup.
-     */
     protected function formatMention(?string $number): ?string
     {
         $digits = preg_replace('/[^0-9]/', '', (string) ($number ?? '')) ?? '';
@@ -112,8 +96,8 @@ class WablasService
 
         $lines[] = '*PENGINGAT BATAS TINDAK LANJUT SURAT*';
         $lines[] = '';
-        $lines[] = 'Nomor Surat : ' . ($kegiatan->nomor ?? '-');
-        $lines[] = 'Perihal     : ' . ($kegiatan->nama_kegiatan ?? '-');
+        $lines[] = 'Nomor Surat : *' . ($kegiatan->nomor ?? '-') . '*';
+        $lines[] = 'Perihal     : *' . ($kegiatan->nama_kegiatan ?? '-') . '*';
 
         if ($kegiatan->tanggal) {
             $lines[] = 'Tanggal     : ' . $kegiatan->tanggal_label;
@@ -167,9 +151,6 @@ class WablasService
         return implode("\n", $lines);
     }
 
-    /**
-     * Ambil tag WA Camat & Sekretaris Kecamatan untuk arahan disposisi.
-     */
     protected function getDispositionTags(): array
     {
         $tags = [];
@@ -192,135 +173,121 @@ class WablasService
         return $tags;
     }
 
-
-	 /**
-	 * Format pesan rekap untuk banyak kegiatan (untuk grup WA).
-	 *
-	 * @param iterable<Kegiatan> $kegiatans
-	 */
-	protected function buildGroupMessage(iterable $kegiatans): string
-	{
-		$items = $kegiatans instanceof Collection ? $kegiatans : collect($kegiatans);
-		$items = $items->sortBy('tanggal');
-
-		$lines = [];
-
-		// JUDUL
-		$lines[] = 'REKAP AGENDA KEGIATAN KANTOR';
-		$lines[] = '';
-
-		// Header "Agenda Kamis, 27 November 2025"
-		if ($items->isNotEmpty()) {
-			/** @var \App\Models\Kegiatan|null $first */
-			$first = $items->first();
-
-			if ($first && $first->tanggal) {
-				try {
-					$label = $first->tanggal
-						->locale('id')
-						->isoFormat('dddd, D MMMM Y'); // Kamis, 27 November 2025
-
-					$lines[] = 'Agenda ' . $label;
-					$lines[] = '';
-				} catch (\Throwable $e) {
-					// Abaikan error format tanggal
-				}
-			}
-		}
-
-		// ISI AGENDA
-		$no = 1;
-
-		/** @var \App\Models\Kegiatan $kegiatan */
-		foreach ($items as $kegiatan) {
-			// Nomor + nama kegiatan
-			$lines[] = $no . '. ' . ($kegiatan->nama_kegiatan ?? '-');
-			$lines[] = '';
-
-			// Waktu & tempat
-			$lines[] = '  ⏰ ' . ($kegiatan->waktu ?? '-');
-			$lines[] = '  📍 ' . ($kegiatan->tempat ?? '-');
-			$lines[] = '';
-
-			// Personil (Penerima Disposisi)
-			$personils = $kegiatan->personils ?? collect();
-
-			if ($personils->isNotEmpty()) {
-				$lines[] = '  👥 Penerima Disposisi:';
-
-				$i = 1;
-				foreach ($personils as $p) {
-					$nama = trim((string) ($p->nama ?? ''));
-
-					if ($nama === '') {
-						continue;
-					}
-
-					// Normalisasi nomor WA -> hanya digit
-					$rawNo  = trim((string) ($p->no_wa ?? ''));
-					$digits = preg_replace('/[^0-9]/', '', $rawNo) ?? '';
-
-					if ($digits !== '') {
-						// 08xxxx -> 628xxxx
-						if (substr($digits, 0, 1) === '0') {
-							$digits = '62' . substr($digits, 1);
-						}
-
-						$tag = ' @' . $digits;
-					} else {
-						// kalau nomor kosong / tidak valid, tidak ada tag
-						$tag = '';
-					}
-
-					//       1. NAMA PERSONIL @628xxxx
-					$lines[] = '      ' . $i . '. ' . $nama . $tag;
-					$i++;
-				}
-
-				$lines[] = '';
-			}
-
-			// KETERANGAN (hanya kalau diisi)
-			$keterangan = trim((string) ($kegiatan->keterangan ?? ''));
-			if ($keterangan !== '') {
-				$lines[] = '  📝 Keterangan:';
-				$lines[] = '      ' . $keterangan;
-				$lines[] = '';
-			}
-
-			// Link surat singkat
-			$suratUrl = $this->getShortSuratUrl($kegiatan);
-			if ($suratUrl) {
-				$lines[] = '  📎 Link Surat: ' . $suratUrl;
-				$lines[] = '';
-			}
-
-			$no++;
-		}
-
-		// Kalau tidak ada agenda
-		if ($no === 1) {
-			$lines[] = '(Tidak ada agenda pada hari ini.)';
-			$lines[] = '';
-		}
-
-		// Footer "Tanggal rekap"
-		$lines[] = 'Tanggal rekap: ' . now()
-			->locale('id')
-			->translatedFormat('d F Y H:i') . ' WIB';
-		$lines[] = '';
-		$lines[] = 'Pesan ini dikirim otomatis dari sistem agenda kantor.';
-
-		return implode("\n", $lines);
-	}
-
     /**
-     * Format pesan ringkas untuk agenda yang BELUM disposisi.
-     *
-     * Hanya menampilkan: nomor surat, nama kegiatan, waktu, tempat, short-link surat.
+     * Format pesan rekap untuk banyak kegiatan (untuk grup WA).
      *
      * @param iterable<Kegiatan> $kegiatans
      */
+    protected function buildGroupMessage(iterable $kegiatans): string
+    {
+        $items = $kegiatans instanceof Collection ? $kegiatans : collect($kegiatans);
+        $items = $items->sortBy('tanggal');
+
+        $lines = [];
+
+        // JUDUL
+        $lines[] = 'REKAP AGENDA KEGIATAN KANTOR';
+        $lines[] = '';
+
+        // Header "Agenda Kamis, 27 November 2025"
+        if ($items->isNotEmpty()) {
+            /** @var \App\Models\Kegiatan|null $first */
+            $first = $items->first();
+
+            if ($first && $first->tanggal) {
+                try {
+                    $label = $first->tanggal
+                        ->locale('id')
+                        ->isoFormat('dddd, D MMMM Y');
+
+                    $lines[] = 'Agenda ' . $label;
+                    $lines[] = '';
+                } catch (\Throwable $e) {
+                    // Abaikan error format tanggal
+                }
+            }
+        }
+
+        // ISI AGENDA
+        $no = 1;
+
+        /** @var \App\Models\Kegiatan $kegiatan */
+        foreach ($items as $kegiatan) {
+            // Nomor + nama kegiatan (dibold)
+            $lines[] = '*' . $no . '. ' . ($kegiatan->nama_kegiatan ?? '-') . '*';
+            $lines[] = '';
+
+            // Waktu & tempat
+            $lines[] = '  ⏰ ' . ($kegiatan->waktu ?? '-');
+            $lines[] = '  📍 ' . ($kegiatan->tempat ?? '-');
+            $lines[] = '';
+
+            // Personil (Penerima Disposisi)
+            $personils = $kegiatan->personils ?? collect();
+
+            if ($personils->isNotEmpty()) {
+                $lines[] = '  👥 Penerima Disposisi:';
+
+                $i = 1;
+                foreach ($personils as $p) {
+                    $nama = trim((string) ($p->nama ?? ''));
+
+                    if ($nama === '') {
+                        continue;
+                    }
+
+                    $rawNo  = trim((string) ($p->no_wa ?? ''));
+                    $digits = preg_replace('/[^0-9]/', '', $rawNo) ?? '';
+
+                    if ($digits !== '') {
+                        if (substr($digits, 0, 1) === '0') {
+                            $digits = '62' . substr($digits, 1);
+                        }
+
+                        $tag = ' @' . $digits;
+                    } else {
+                        $tag = '';
+                    }
+
+                    $lines[] = '      ' . $i . '. ' . $nama . $tag;
+                    $i++;
+                }
+
+                $lines[] = '';
+            }
+
+            // KETERANGAN (hanya kalau diisi)
+            $keterangan = trim((string) ($kegiatan->keterangan ?? ''));
+            if ($keterangan !== '') {
+                $lines[] = '  📝 Keterangan:';
+                $lines[] = '      ' . $keterangan;
+                $lines[] = '';
+            }
+
+            // Link surat singkat
+            $suratUrl = $this->getShortSuratUrl($kegiatan);
+            if ($suratUrl) {
+                $lines[] = '  📎 Link Surat: ' . $suratUrl;
+                $lines[] = '';
+            }
+
+            $no++;
+        }
+
+        if ($no === 1) {
+            $lines[] = '(Tidak ada agenda pada hari ini.)';
+            $lines[] = '';
+        }
+
+        $lines[] = 'Tanggal rekap: ' . now()
+            ->locale('id')
+            ->translatedFormat('d F Y H:i') . ' WIB';
+        $lines[] = '';
+        $lines[] = 'Pesan ini dikirim otomatis dari sistem agenda kantor.';
+
+        return implode("\n", $lines);
+    }
+
     protected function buildGroupMessageBelumDisposisi(iterable $kegiatans): string
     {
         $items = $kegiatans instanceof Collection ? $kegiatans : collect($kegiatans);
@@ -347,11 +314,10 @@ class WablasService
             }
 
             $lines[] = '*' . $no . '. ' . ($kegiatan->nama_kegiatan ?? '-') . '*';
-            //$lines[] = '🆔 *Nomor Surat* : ' . ($kegiatan->nomor ?? '-');
             $lines[] = ' *Tanggal*     : ' . ($kegiatan->tanggal_label ?? '-');
             $lines[] = ' *Waktu*       : ' . ($kegiatan->waktu ?? '-');
             $lines[] = ' *Tempat*      : ' . ($kegiatan->tempat ?? '-');
-			      $lines[] = '';
+            $lines[] = '';
             $lines[] = '';
             $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {
@@ -359,7 +325,7 @@ class WablasService
                 $lines[] = $suratUrl;
             }
 
-            $lines[] = ''; // spasi antar kegiatan
+            $lines[] = '';
             $no++;
         }
 
@@ -386,12 +352,6 @@ class WablasService
         return implode("\n", $lines);
     }
 
-    /**
-     * Ambil tag nomor WhatsApp berdasarkan jabatan tertentu.
-     *
-     * @param array<int, string> $jabatanList
-     * @return array<int, string>
-     */
     protected function getPersonilTagsByJabatan(array $jabatanList): array
     {
         $personils = Personil::query()
@@ -430,11 +390,11 @@ class WablasService
         $lines[] = '';
 
         $lines[] = '*Nama Kegiatan*';
-        $lines[] = ($kegiatan->nama_kegiatan ?? '-');
+        $lines[] = '*' . ($kegiatan->nama_kegiatan ?? '-') . '*';
         $lines[] = '';
 
         $lines[] = '*Nomor Surat*';
-        $lines[] = ($kegiatan->nomor ?? '-');
+        $lines[] = '*' . ($kegiatan->nomor ?? '-') . '*';
         $lines[] = '';
 
         $lines[] = '*Hari / Tanggal*';
@@ -455,7 +415,6 @@ class WablasService
             $lines[] = '';
         }
 
-        // Short-link surat undangan kalau ada
         $suratUrl = $this->getShortSuratUrl($kegiatan);
         if ($suratUrl) {
             $lines[] = '📎 *Surat Undangan (PDF)*';
@@ -470,9 +429,6 @@ class WablasService
         return implode("\n", $lines);
     }
 
-    /**
-     * Kirim pengingat batas waktu tindak lanjut surat kegiatan non-undangan ke grup WA.
-     */
     public function sendGroupTindakLanjutReminder(Kegiatan $kegiatan): bool
     {
         if (! $this->isConfigured()) {
@@ -519,11 +475,6 @@ class WablasService
         return (bool) data_get($json, 'status', false);
     }
 
-    /**
-     * Kirim rekap ke GRUP WA.
-     *
-     * @param iterable<Kegiatan> $kegiatans
-     */
     public function sendGroupRekap(iterable $kegiatans): bool
     {
         if (! $this->isConfigured()) {
@@ -549,9 +500,9 @@ class WablasService
         $payload = [
             'data' => [
                 [
-                    'phone'   => $this->groupId,   // group id, bukan nomor biasa
+                    'phone'   => $this->groupId,
                     'message' => $message,
-                    'isGroup' => 'true',          // string "true" sesuai docs
+                    'isGroup' => 'true',
                 ],
             ],
         ];
@@ -577,11 +528,6 @@ class WablasService
         return (bool) data_get($json, 'status', false);
     }
 
-    /**
-     * Kirim ke grup WA: daftar agenda yang BELUM disposisi.
-     *
-     * @param iterable<Kegiatan> $kegiatans
-     */
     public function sendGroupBelumDisposisi(iterable $kegiatans): bool
     {
         if (! $this->isConfigured()) {
@@ -607,7 +553,7 @@ class WablasService
         $payload = [
             'data' => [
                 [
-                    'phone'   => $this->groupId,  // ID grup dari config
+                    'phone'   => $this->groupId,
                     'message' => $message,
                     'isGroup' => 'true',
                 ],
@@ -635,9 +581,6 @@ class WablasService
         return (bool) data_get($json, 'status', false);
     }
 
-    /**
-     * Kirim pesan ke WA seluruh personil yang hadir pada 1 kegiatan.
-     */
     public function sendToPersonils(Kegiatan $kegiatan): bool
     {
         if (! $this->isConfigured()) {
