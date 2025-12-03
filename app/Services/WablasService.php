@@ -104,6 +104,46 @@ class WablasService
     }
 
     /**
+     * Format pesan pengingat batas waktu tindak lanjut.
+     */
+    protected function buildTindakLanjutReminderMessage(Kegiatan $kegiatan): string
+    {
+        $lines = [];
+
+        $lines[] = '*PENGINGAT BATAS WAKTU TL SURAT*';
+        $lines[] = '';
+        $lines[] = 'Nama kegiatan : ' . ($kegiatan->nama_kegiatan ?? '-');
+        $lines[] = 'Nomor surat   : ' . ($kegiatan->nomor ?? '-');
+
+        if ($kegiatan->tanggal) {
+            $lines[] = 'Tanggal surat : ' . $kegiatan->tanggal_label;
+        }
+
+        $deadlineLabel = $kegiatan->tindak_lanjut_deadline_label ?? '-';
+        $lines[] = 'Batas waktu TL: ' . $deadlineLabel;
+
+        if ($kegiatan->waktu) {
+            $lines[] = 'Waktu agenda  : ' . $kegiatan->waktu;
+        }
+
+        if ($kegiatan->tempat) {
+            $lines[] = 'Lokasi        : ' . $kegiatan->tempat;
+        }
+
+        $keterangan = trim((string) ($kegiatan->keterangan ?? ''));
+        if ($keterangan !== '') {
+            $lines[] = '';
+            $lines[] = 'Keterangan:';
+            $lines[] = $keterangan;
+        }
+
+        $lines[] = '';
+        $lines[] = '_Pesan otomatis: surat kegiatan non-undangan dengan batas waktu tindak lanjut._';
+
+        return implode("\n", $lines);
+    }
+
+    /**
      * Ambil tag WA Camat & Sekretaris Kecamatan untuk arahan disposisi.
      */
     protected function getDispositionTags(): array
@@ -407,6 +447,54 @@ class WablasService
     }
 
     /**
+     * Kirim pengingat batas waktu tindak lanjut surat kegiatan non-undangan ke grup WA.
+     */
+    public function sendGroupTindakLanjutReminder(Kegiatan $kegiatan): bool
+    {
+        if (! $this->isConfigured()) {
+            Log::error('WablasService: konfigurasi belum lengkap untuk pengingat TL', [
+                'base_url'  => $this->baseUrl,
+                'token_set' => $this->token !== '',
+                'group_id'  => $this->groupId,
+            ]);
+
+            return false;
+        }
+
+        $message = $this->buildTindakLanjutReminderMessage($kegiatan);
+
+        $payload = [
+            'data' => [
+                [
+                    'phone'   => $this->groupId,
+                    'message' => $message,
+                    'isGroup' => 'true',
+                ],
+            ],
+        ];
+
+        $response = $this->client()
+            ->post($this->baseUrl . '/api/v2/send-message', $payload);
+
+        if (! $response->successful()) {
+            Log::error('WablasService: HTTP error kirim pengingat TL', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
+            return false;
+        }
+
+        $json = $response->json();
+
+        Log::info('WablasService: response sendGroupTindakLanjutReminder', [
+            'response' => $json,
+        ]);
+
+        return (bool) data_get($json, 'status', false);
+    }
+
+    /**
      * Kirim rekap ke GRUP WA.
      *
      * @param iterable<Kegiatan> $kegiatans
@@ -517,6 +605,109 @@ class WablasService
 
         Log::info('WablasService: response sendGroupBelumDisposisi', [
             'response' => $json,
+        ]);
+
+        return (bool) data_get($json, 'status', false);
+    }
+
+    /**
+     * Pesan pengingat batas waktu tindak lanjut surat masuk (kegiatan).
+     */
+    protected function buildTindakLanjutReminderMessage(Kegiatan $kegiatan): string
+    {
+        $lines = [];
+
+        $lines[] = '*PENGINGAT BATAS TINDAK LANJUT SURAT*';
+        $lines[] = '';
+        $lines[] = 'Nomor Surat : ' . ($kegiatan->nomor ?? '-');
+        $lines[] = 'Perihal     : ' . ($kegiatan->nama_kegiatan ?? '-');
+
+        if ($kegiatan->tanggal) {
+            $lines[] = 'Tanggal Kegiatan : ' . $kegiatan->tanggal
+                ->locale('id')
+                ->isoFormat('dddd, D MMMM Y');
+        }
+
+        $deadline = $kegiatan->batas_tindak_lanjut;
+        if ($deadline) {
+            $lines[] = 'Batas TL : ' . $deadline
+                ->locale('id')
+                ->isoFormat('dddd, D MMMM Y HH:mm') . ' WIB';
+        } else {
+            $lines[] = 'Batas TL : -';
+        }
+
+        $keterangan = trim((string) ($kegiatan->keterangan ?? ''));
+        if ($keterangan !== '') {
+            $lines[] = '';
+            $lines[] = 'Catatan:';
+            $lines[] = $keterangan;
+        }
+
+        $suratUrl = $this->getShortSuratUrl($kegiatan);
+        if ($suratUrl) {
+            $lines[] = '';
+            $lines[] = '📎 Surat (PDF):';
+            $lines[] = $suratUrl;
+        }
+
+        $tags = $this->getDispositionTags();
+        if (! empty($tags)) {
+            $lines[] = '';
+            $lines[] = 'Mohon tindak lanjut:';
+            $lines[] = implode(' ', $tags);
+        }
+
+        $lines[] = '';
+        $lines[] = '_Pesan ini dikirim otomatis saat batas waktu tindak lanjut tercapai._';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Kirim pengingat batas tindak lanjut ke grup WA.
+     */
+    public function sendGroupTindakLanjutReminder(Kegiatan $kegiatan): bool
+    {
+        if (! $this->isConfigured()) {
+            Log::error('WablasService: konfigurasi belum lengkap untuk pengingat TL', [
+                'base_url'  => $this->baseUrl,
+                'token_set' => $this->token !== '',
+                'group_id'  => $this->groupId,
+            ]);
+
+            return false;
+        }
+
+        $message = $this->buildTindakLanjutReminderMessage($kegiatan);
+
+        $payload = [
+            'data' => [
+                [
+                    'phone'   => $this->groupId,
+                    'message' => $message,
+                    'isGroup' => 'true',
+                ],
+            ],
+        ];
+
+        $response = $this->client()
+            ->post($this->baseUrl . '/api/v2/send-message', $payload);
+
+        if (! $response->successful()) {
+            Log::error('WablasService: HTTP error kirim pengingat TL', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
+            return false;
+        }
+
+        $json = $response->json();
+
+        Log::info('WablasService: response pengingat TL', [
+            'response' => $json,
+            'kegiatan' => $kegiatan->id,
         ]);
 
         return (bool) data_get($json, 'status', false);
