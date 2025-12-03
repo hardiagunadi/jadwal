@@ -120,8 +120,13 @@ class KegiatansTable
                         ];
                     }),
 
+                Filter::make('belum_disposisi')
+                    ->label('Belum Disposisi')
+                    ->query(fn (Builder $query): Builder => $query->where('sudah_disposisi', false))
+                    ->toggle(),
+
                 Filter::make('tindak_lanjut')
-                    ->label('Surat Tindak Lanjut')
+                    ->label('Surat Masuk (TL)')
                     ->query(fn (Builder $query): Builder => $query->where('jenis_surat', 'tindak_lanjut')),
             ])
 
