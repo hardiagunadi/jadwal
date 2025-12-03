@@ -21,19 +21,21 @@ class NomorSuratExtractor
             return null;
         }
 
-        $lines = $this->splitLines($text);
+        // ========== POLA 1: "Nomor : 800/489/BKD" / "No. 800/489/BKD" pada baris yang sama ==========
+        $patternInline = '/\b(?:Nomor|No)\.?\s*(?:Surat)?\s*[:\-\.]\s*([0-9A-Za-z][0-9A-Za-z.\/-]+(?:\s*[0-9A-Za-z.\/-]+)*)/iu';
 
-        // ========== POLA 1: "Nomor : 800/489/BKD" / "No. 800/123/ABC" ==========
-        $pattern = '/\b(?:nomor|no)\b\s*[:\.\-]?\s*([0-9A-Za-z.\/-][0-9A-Za-z.\/-\s]{0,50})/iu';
+        if (preg_match($patternInline, $text, $matches)) {
+            $line = trim($matches[1]);
+            $line = preg_split("/\r\n|\n|\r/", $line)[0] ?? $line;
 
-        if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $match) {
-                $normalized = $this->normalizeNomor($match[1] ?? '');
+            return $this->sanitizeNomor($line);
+        }
 
-                if ($normalized) {
-                    return $normalized;
-                }
-            }
+        // ========== POLA 2: "Nomor" baris sendiri, nomor di baris bawah atau setelah tab ==========
+        $lines = $this->normalizeLines($text);
+
+        if (empty($lines)) {
+            return null;
         }
 
         // ========== POLA 2: "Nomor" baris sendiri, nomor di baris bawah ==========
@@ -46,40 +48,60 @@ class NomorSuratExtractor
             'perihal',
             ':',
             'nomor:',
-            'nomor.',
-            'nomor-',
+            'no:',
         ];
 
+        // Cari baris yang ada kata "Nomor" atau "No" lalu ambil kandidat terdekat
         for ($i = 0; $i < count($lines); $i++) {
-            $current = trim($lines[$i]);
+            $current = $lines[$i];
 
-            if ($current === '') {
-                continue;
-            }
+            if (preg_match('/\bNomor\b|\bNo\b/i', $current)) {
+                // Jika di baris yang sama ada angka, ambil yang setelah tanda : atau spasi panjang
+                if (preg_match('/\b(?:Nomor|No)\b[^0-9A-Za-z]*([0-9A-Za-z][0-9A-Za-z.\/-]+(?:\s*[0-9A-Za-z.\/-]+)*)/u', $current, $sameLine)) {
+                    $candidate = $this->sanitizeNomor($sameLine[1]);
+                    if ($candidate) {
+                        return $candidate;
+                    }
+                }
 
-            if (preg_match('/^\s*(nomor|no)\b/iu', $current)) {
-                // Lihat beberapa baris setelah "Nomor"
-                for ($j = $i + 1; $j < min($i + 10, count($lines)); $j++) {
-                    $candidate = trim($lines[$j]);
+                // Kalau tidak ada di baris yang sama, cek beberapa baris setelahnya
+                for ($j = $i + 1; $j < min($i + 8, count($lines)); $j++) {
+                    $candidate = $lines[$j];
 
-                    if ($candidate === '') {
+                    if ($candidate === '' || in_array(strtolower($candidate), $skipWords, true)) {
                         continue;
                     }
 
-                    if (in_array(strtolower($candidate), $skipWords, true)) {
+                    if ($this->looksLikeDate($candidate)) {
                         continue;
                     }
 
-                    $normalized = $this->normalizeNomor($candidate);
-
-                    if ($normalized) {
-                        return $normalized;
+                    if (preg_match('/^[0-9A-Za-z.\/-]+(?:\s*[0-9A-Za-z.\/-]+)*$/u', $candidate)) {
+                        return $this->sanitizeNomor($candidate);
                     }
                 }
             }
         }
 
-        return null;
+        // ========== POLA 3: cari kandidat nomor di 20 baris pertama (surat resmi biasanya di atas) ==========
+        $topLines = array_slice($lines, 0, 20);
+        $best = null;
+
+        foreach ($topLines as $line) {
+            if ($line === '' || $this->looksLikeDate($line)) {
+                continue;
+            }
+
+            if (preg_match('/\b([0-9]{1,4}\/[^\s]{3,}\/[0-9]{2,4})\b/u', $line, $matches)) {
+                $candidate = $this->sanitizeNomor($matches[1]);
+
+                if ($candidate && (strlen($candidate) > strlen($best ?? '') || $best === null)) {
+                    $best = $candidate;
+                }
+            }
+        }
+
+        return $best;
     }
 
     /**
@@ -95,29 +117,27 @@ class NomorSuratExtractor
             return null;
         }
 
-        $lines = $this->splitLines($text);
+        $lines = $this->normalizeLines($text);
+
+        if (empty($lines)) {
+            return null;
+        }
 
         // ========== POLA 1: "Hal : Revisi Undangan ..." / "Perihal: Undangan ..." (1 baris) ==========
-        foreach ($lines as $line) {
-            $line = trim($line);
-
-            if ($line === '') {
-                continue;
-            }
-
+        foreach ($lines as $index => $line) {
             // Awalan Hal/Perihal (case-insensitive), boleh ada titik dua / minus
             if (preg_match('/^\s*(hal|perihal)\b\s*[:\-]?\s*(.+)$/iu', $line, $matches)) {
-                $normalized = $this->normalizePerihal($matches[2] ?? '');
+                $subject = $this->mergeContinuationLines($lines, $index, $matches[2]);
 
-                if ($normalized) {
-                    return $normalized;
+                if ($subject !== '') {
+                    return $subject;
                 }
             }
         }
 
-        // ========== POLA 2: "Hal" / "Perihal" sendirian, isi baris setelahnya ==========
+        // ========== POLA 2: "Hal" / "Perihal" sendirian, isi baris setelahnya (bisa multi-line) ==========
         for ($i = 0; $i < count($lines); $i++) {
-            $current = trim($lines[$i]);
+            $current = $lines[$i];
 
             if ($current === '') {
                 continue;
@@ -132,11 +152,9 @@ class NomorSuratExtractor
                         continue;
                     }
 
-                    $normalized = $this->normalizePerihal($candidate);
+                    $candidate = $this->mergeContinuationLines($lines, $j, $candidate);
 
-                    if ($normalized) {
-                        return $normalized;
-                    }
+                    return $candidate;
                 }
             }
         }
@@ -144,69 +162,87 @@ class NomorSuratExtractor
         return null;
     }
 
-    private function readPdfText(string $path): ?string
+    /**
+     * Buat semua baris lebih rapi: hilangkan spasi ganda, hilangkan karakter non-printable.
+     */
+    protected function normalizeLines(string $text): array
     {
-        if (is_file($path)) {
-            $fullPath = $path;
-        } else {
-            $fullPath = Storage::disk('public')->path($path);
-        }
+        $lines = preg_split("/\r\n|\n|\r/", $text) ?: [];
 
-        if (! is_file($fullPath) || ! is_readable($fullPath)) {
-            return null;
-        }
+        return array_values(array_map(function (string $line) {
+            $clean = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $line) ?: '';
+            $clean = preg_replace('/\s+/', ' ', $clean) ?: '';
 
-        $text = Pdf::getText($fullPath);
-
-        return $text ?: null;
+            return trim($clean);
+        }, $lines));
     }
 
-    private function splitLines(string $text): array
+    /**
+     * Hilangkan karakter pengganggu dan batasi panjang nomor.
+     */
+    protected function sanitizeNomor(?string $candidate): ?string
     {
-        return preg_split("/\r\n|\n|\r/", $text) ?: [];
+        if (! $candidate) {
+            return null;
+        }
+
+        $candidate = trim($candidate, " \t\r\n:.-");
+        $candidate = preg_replace('/\s+/', ' ', $candidate) ?: '';
+
+        if ($candidate === '') {
+            return null;
+        }
+
+        return mb_strimwidth($candidate, 0, 120, '');
     }
 
-    private function normalizeNomor(?string $value): ?string
+    /**
+     * Deteksi baris yang lebih mirip tanggal supaya tidak keliru terbaca sebagai nomor surat.
+     */
+    protected function looksLikeDate(string $line): bool
     {
-        if ($value === null) {
-            return null;
+        $datePatterns = [
+            '/\b\d{1,2}\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\b/i',
+            '/\b\d{1,2}[\-\/]\d{1,2}[\-\/]\d{2,4}\b/',
+            '/\b\d{4}\b/',
+        ];
+
+        foreach ($datePatterns as $pattern) {
+            if (preg_match($pattern, $line)) {
+                return true;
+            }
         }
 
-        $value = preg_split("/\r\n|\n|\r/", $value)[0] ?? $value;
-        $value = trim($value, " \t\n\r\0\x0B:.-");
-        $value = preg_replace('/\s+/', '', $value);
-
-        if ($value === '') {
-            return null;
-        }
-
-        if (! preg_match('/[0-9A-Za-z]/', $value)) {
-            return null;
-        }
-
-        if (! preg_match('/^[0-9A-Za-z.\/-]+$/', $value)) {
-            return null; // mengandung karakter aneh -> abaikan
-        }
-
-        return $value;
+        return false;
     }
 
-    private function normalizePerihal(?string $value): ?string
+    /**
+     * Gabungkan baris lanjutan jika kalimatnya terpotong dan belum ketemu penanda bagian lain.
+     */
+    protected function mergeContinuationLines(array $lines, int $startIndex, string $firstPart): string
     {
-        if ($value === null) {
-            return null;
+        $subject = trim(preg_replace('/\s+/', ' ', $firstPart) ?? '');
+
+        // Jika sudah cukup jelas dan ada tanda baca akhir, langsung kembalikan
+        if ($subject !== '' && preg_match('/[\.\;\:]$/', $subject) === 0) {
+            for ($k = $startIndex + 1; $k < min($startIndex + 3, count($lines)); $k++) {
+                $next = trim($lines[$k]);
+
+                if ($next === '' || preg_match('/^(lampiran|tembusan|nomor|tanggal|sifat)\b/i', $next)) {
+                    break;
+                }
+
+                $subject .= ' ' . $next;
+
+                // Jika sudah berakhir dengan titik atau panjang cukup, hentikan
+                if (preg_match('/[\.\!]$/', $next) || strlen($subject) > 200) {
+                    break;
+                }
+            }
         }
 
-        $value = preg_split("/\r\n|\n|\r/", $value)[0] ?? $value;
-        $value = trim($value, " \t\n\r\0\x0B:.-");
-        $value = preg_replace('/^[0-9]+[\).]\s*/', '', $value); // buang numbering seperti "1. ..." / "2) ..."
-        $value = preg_replace('/^[-•]\s*/u', '', $value); // buang bullet
-        $value = preg_replace('/\s+/', ' ', $value);
+        $subject = preg_replace('/\s+/', ' ', $subject) ?: '';
 
-        if ($value === '') {
-            return null;
-        }
-
-        return mb_strimwidth($value, 0, 200, '...');
+        return mb_strimwidth($subject, 0, 200, '...');
     }
 }
