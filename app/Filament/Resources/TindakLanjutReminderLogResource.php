@@ -7,7 +7,7 @@ use App\Models\TindakLanjutReminderLog;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Tables\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -50,10 +50,12 @@ class TindakLanjutReminderLogResource extends Resource
                     ->colors([
                         'success' => 'success',
                         'failed' => 'danger',
+                        'pending' => 'warning',
                     ])
                     ->icons([
                         'success' => 'heroicon-m-check-badge',
                         'failed' => 'heroicon-m-x-circle',
+                        'pending' => 'heroicon-m-clock',
                     ])
                     ->label('Status')
                     ->sortable(),
@@ -77,6 +79,7 @@ class TindakLanjutReminderLogResource extends Resource
                     ->options([
                         'success' => 'Berhasil',
                         'failed' => 'Gagal',
+                        'pending' => 'Menunggu',
                     ]),
             ])
             ->actions([

@@ -42,7 +42,7 @@ class RemindTindakLanjutCommand extends Command
             ->where('jenis_surat', 'tindak_lanjut')
             ->whereNotNull('batas_tindak_lanjut')
             ->whereNull('tl_reminder_sent_at')
-            ->where('batas_tindak_lanjut', '<=', Carbon::now())
+            ->where('batas_tindak_lanjut', '<=', Carbon::now()->addMinute())
             ->get();
 
         if ($kegiatans->isEmpty()) {
@@ -57,13 +57,15 @@ class RemindTindakLanjutCommand extends Command
             $result = $wablas->sendGroupTindakLanjutReminder($kegiatan);
             $success = (bool) ($result['success'] ?? false);
 
-            TindakLanjutReminderLog::create([
+            $log = TindakLanjutReminderLog::firstOrNew([
                 'kegiatan_id' => $kegiatan->id,
-                'status' => $success ? 'success' : 'failed',
-                'error_message' => $result['error'] ?? null,
-                'response' => $result['response'] ?? null,
-                'sent_at' => $success ? Carbon::now() : null,
             ]);
+
+            $log->status = $success ? 'success' : 'failed';
+            $log->error_message = $result['error'] ?? null;
+            $log->response = $result['response'] ?? null;
+            $log->sent_at = $success ? Carbon::now() : null;
+            $log->save();
 
             if ($success) {
                 $kegiatan->update([
