@@ -42,7 +42,7 @@ class RemindTindakLanjutCommand extends Command
             ->where('jenis_surat', 'tindak_lanjut')
             ->whereNotNull('batas_tindak_lanjut')
             ->whereNull('tl_reminder_sent_at')
-            ->where('batas_tindak_lanjut', '<=', Carbon::now()->addMinute())
+            ->where('batas_tindak_lanjut', '<=', Carbon::now()->addHours(5))
             ->get();
 
         if ($kegiatans->isEmpty()) {

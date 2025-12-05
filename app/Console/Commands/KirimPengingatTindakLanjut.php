@@ -21,7 +21,7 @@ class KirimPengingatTindakLanjut extends Command
             return self::FAILURE;
         }
 
-        $deadlineThreshold = now()->addMinute();
+        $deadlineThreshold = now()->addHours(5);
 
         $dueKegiatans = Kegiatan::query()
             ->where('jenis_surat', 'tindak_lanjut')
