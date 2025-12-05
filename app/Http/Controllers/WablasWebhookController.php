@@ -114,6 +114,13 @@ class WablasWebhookController extends Controller
             ->filter()
             ->values();
 
+        // Pastikan nomor personil terhubung tetap masuk meski relasi belum dimuat lengkap.
+        $assignedFromDb = $kegiatan->personils()
+            ->pluck('personils.no_wa')
+            ->map(fn ($noWa) => $this->normalizeNumberFromDb($noWa))
+            ->filter()
+            ->values();
+
         $roleNumbers = Personil::query()
             ->where(function ($q) use ($allowedJabatan, $rolePatterns) {
                 $q->whereIn('jabatan', $allowedJabatan);
@@ -128,6 +135,7 @@ class WablasWebhookController extends Controller
             ->values();
 
         $allowedNumbers = $assignedNumbers
+            ->merge($assignedFromDb)
             ->merge($roleNumbers)
             ->unique()
             ->values()
