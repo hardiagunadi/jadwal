@@ -24,7 +24,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('surat:ingatkan-tl')->everyTenMinutes();
+        // Jalankan lebih sering agar pengiriman H-1 menit tidak terlewat.
+        $schedule->command('surat:ingatkan-tl')->everyMinute();
     }
 
     /**

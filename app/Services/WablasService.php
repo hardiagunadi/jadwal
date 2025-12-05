@@ -92,12 +92,24 @@ class WablasService
      */
     protected function buildTindakLanjutReminderMessage(Kegiatan $kegiatan): string
     {
+        $kegiatan->loadMissing('personils');
+
         $lines = [];
+
+        $nomorSurat = trim((string) ($kegiatan->nomor ?? ''));
+        if ($nomorSurat === '') {
+            $nomorSurat = '-';
+        }
+
+        $perihal = trim((string) ($kegiatan->nama_kegiatan ?? ''));
+        if ($perihal === '') {
+            $perihal = '-';
+        }
 
         $lines[] = '*PENGINGAT BATAS TINDAK LANJUT SURAT*';
         $lines[] = '';
-        $lines[] = 'Nomor Surat : *' . ($kegiatan->nomor ?? '-') . '*';
-        $lines[] = 'Perihal     : *' . ($kegiatan->nama_kegiatan ?? '-') . '*';
+        $lines[] = 'Nomor Surat : *' . $nomorSurat . '*';
+        $lines[] = 'Perihal      : *' . $perihal . '*';
 
         if ($kegiatan->tanggal) {
             $lines[] = 'Tanggal     : ' . $kegiatan->tanggal_label;
@@ -138,7 +150,10 @@ class WablasService
             $lines[] = $suratUrl;
         }
 
-        $tags = $this->getDispositionTags();
+        $tags = array_values(array_unique([
+            ...$this->getDispositionTags(),
+            ...$this->getPersonilTagsForKegiatan($kegiatan),
+        ]));
         if (! empty($tags)) {
             $lines[] = '';
             $lines[] = 'Mohon tindak lanjut:';
@@ -171,6 +186,22 @@ class WablasService
         }
 
         return $tags;
+    }
+
+    protected function getPersonilTagsForKegiatan(Kegiatan $kegiatan): array
+    {
+        $personils = $kegiatan->personils ?? collect();
+
+        if ($personils->isEmpty()) {
+            return [];
+        }
+
+        return $personils
+            ->map(fn ($personil) => $this->formatMention($personil->no_wa))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
