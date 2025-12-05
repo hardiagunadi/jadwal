@@ -11,7 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         KirimPengingatTindakLanjut::class,
     ])
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->command('surat:ingatkan-tl')->everyFifteenMinutes();
+        // Jalankan scheduler pengingat TL setiap menit agar window 5 jam dan pengingat akhir tidak terlewat.
+        $schedule->command('surat:ingatkan-tl')->everyMinute();
+        $schedule->command('kegiatan:remind-tindak-lanjut')->everyMinute();
     })
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
