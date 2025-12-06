@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kegiatan;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Crypt;
 
 class KegiatanSuratController extends Controller
 {
@@ -25,6 +25,27 @@ class KegiatanSuratController extends Controller
         return view('kegiatan.surat-view', [
             'kegiatan' => $kegiatan,
             'fileUrl'  => $fileUrl,
+        ]);
+    }
+
+    public function preview(string $token)
+    {
+        try {
+            $path = Crypt::decryptString($token);
+        } catch (\Throwable $th) {
+            abort(404);
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        $fullPath = Storage::disk('public')->path($path);
+        $filename = basename($path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "inline; filename=\"{$filename}\"",
         ]);
     }
 }
