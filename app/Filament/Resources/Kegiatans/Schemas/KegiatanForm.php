@@ -86,6 +86,11 @@ class KegiatanForm
                                 static::populateFieldsFromPdf($storedPath, $set);
                             })
                             ->openable(),
+                        Placeholder::make('preview_surat_button')
+                            ->label('')
+                            ->content(fn (Get $get) => static::renderPreviewButton($get('surat_undangan')))
+                            ->visible(fn (Get $get) => filled($get('surat_undangan')))
+                            ->columnSpanFull(),
 
                         TextInput::make('nomor')
                             ->label('Nomor Surat')
@@ -135,11 +140,6 @@ class KegiatanForm
                             ->required()
                             ->helperText('Akan otomatis diisi dari PDF jika pola tanggal surat dikenali.')
                             ->displayFormat('d-m-Y'),
-                        Placeholder::make('preview_surat_button')
-                            ->label('')
-                            ->content(fn (Get $get) => static::renderPreviewButton($get('surat_undangan')))
-                            ->visible(fn (Get $get) => filled($get('surat_undangan')))
-                            ->columnSpanFull(),
 
                         TextInput::make('waktu')
                             ->label('Waktu')
