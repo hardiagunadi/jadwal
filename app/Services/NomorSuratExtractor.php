@@ -167,4 +167,53 @@ class NomorSuratExtractor
 
         return null;
     }
+
+    /**
+     * Ambil tanggal surat (misal "12 Januari 2025" atau "12/01/2025") dari PDF.
+     */
+    public function extractTanggal(string $path): ?string
+    {
+        if (is_file($path)) {
+            $fullPath = $path;
+        } else {
+            $fullPath = Storage::disk('public')->path($path);
+        }
+
+        if (! is_file($fullPath) || ! is_readable($fullPath)) {
+            return null;
+        }
+
+        $text = Pdf::getText($fullPath);
+
+        if (! $text) {
+            return null;
+        }
+
+        $bulanRegex = implode('|', [
+            'januari',
+            'februari',
+            'maret',
+            'april',
+            'mei',
+            'juni',
+            'juli',
+            'agustus',
+            'september',
+            'oktober',
+            'november',
+            'desember',
+        ]);
+
+        // Pola "12 Januari 2025"
+        if (preg_match('/\b(\d{1,2})\s+(' . $bulanRegex . ')\s+(\d{2,4})\b/iu', $text, $matches)) {
+            return trim($matches[0]);
+        }
+
+        // Pola numerik "12-01-2025" atau "12/01/2025"
+        if (preg_match('/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/', $text, $matches)) {
+            return trim($matches[0]);
+        }
+
+        return null;
+    }
 }

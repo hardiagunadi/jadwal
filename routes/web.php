@@ -30,6 +30,10 @@ Route::view('/pengingat-audio', 'pengingat.audio')
 Route::get('/u/{kegiatan}', [KegiatanSuratController::class, 'show'])
     ->name('kegiatan.surat.short');
 
+Route::get('/preview-surat/{token}', [KegiatanSuratController::class, 'preview'])
+    ->middleware('signed')
+    ->name('kegiatan.surat.preview');
+
 Route::get('/login', function () {
     return redirect()->route('filament.admin.auth.login');
 })->name('login');
