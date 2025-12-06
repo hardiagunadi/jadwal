@@ -4,6 +4,7 @@ namespace App\Filament\Resources\VehicleTaxes\Schemas;
 
 use App\Models\Personil;
 use App\Models\VehicleAsset;
+use App\Models\VehicleTax;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Hidden;
@@ -37,9 +38,28 @@ class VehicleTaxForm
                       
                         Select::make('plat_nomor')
                             ->label('Plat Nomor')
-                            ->options(fn () => VehicleAsset::query()
-                                ->orderBy('nomor_polisi')
-                                ->pluck('nomor_polisi', 'nomor_polisi'))
+                            ->options(function (Get $get) {
+                                $used = VehicleTax::query()
+                                    ->pluck('plat_nomor')
+                                    ->map(fn ($p) => strtoupper(str_replace(' ', '', (string) $p)))
+                                    ->all();
+
+                                $currentPlat = strtoupper(str_replace(' ', '', (string) $get('plat_nomor')));
+
+                                if ($currentPlat !== '') {
+                                    $used = array_values(array_diff($used, [$currentPlat]));
+                                }
+
+                                return VehicleAsset::query()
+                                    ->orderBy('nomor_polisi')
+                                    ->get()
+                                    ->filter(function (VehicleAsset $asset) use ($used) {
+                                        $platNorm = strtoupper(str_replace(' ', '', (string) $asset->nomor_polisi));
+
+                                        return ! in_array($platNorm, $used, true);
+                                    })
+                                    ->pluck('nomor_polisi', 'nomor_polisi');
+                            })
                             ->searchable()
                             ->preload()
                             ->required()
