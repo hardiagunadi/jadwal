@@ -81,26 +81,9 @@ class KegiatanForm
                                     return;
                                 }
 
-                                /** @var NomorSuratExtractor $extractor */
-                                $extractor = app(NomorSuratExtractor::class);
+                                $set('surat_undangan', $storedPath);
 
-                                // ===== NOMOR SURAT =====
-                                $nomor = $extractor->extract($path);
-                                if (! empty($nomor)) {
-                                    $set('nomor', $nomor);
-                                }
-
-                                // ===== HAL / PERIHAL → NAMA KEGIATAN =====
-                                $perihal = $extractor->extractPerihal($path);
-                                if (! empty($perihal)) {
-                                    $set('nama_kegiatan', $perihal);
-                                }
-
-                                // ===== TANGGAL SURAT =====
-                                $tanggalSurat = $extractor->extractTanggal($path);
-                                if (! empty($tanggalSurat)) {
-                                    $set('tanggal', $tanggalSurat);
-                                }
+                                static::populateFieldsFromPdf($storedPath, $set);
                             }),
 
                         TextInput::make('nomor')
