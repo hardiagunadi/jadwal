@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\KirimPengingatTindakLanjut::class,
         RemindTindakLanjutCommand::class,
         \App\Console\Commands\SendVehicleTaxReminders::class,
+        \App\Console\Commands\DispatchScheduledInstagramPosts::class,
     ];
 
     /**
@@ -30,6 +31,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('vehicle-taxes:send-reminders')->dailyAt('08:00');
 
         $schedule->command('queue:work --stop-when-empty')->everyMinute()->withoutOverlapping();
+        $schedule->command('instagram:dispatch-scheduled')->everyMinute();
     }
 
     /**
