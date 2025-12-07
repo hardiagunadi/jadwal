@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Kegiatans\Schemas;
 use App\Models\Kegiatan;
 use App\Models\Personil;
 use App\Services\NomorSuratExtractor;
+use Filament\Actions\Action;
 use Carbon\Carbon;
+use Filament\Schemas\Components\Actions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
@@ -220,6 +222,51 @@ class KegiatanForm
                             ->helperText('Pilih personil yang akan menghadiri kegiatan ini.'),
                     ])
                     ->columns(1)
+                    ->columnSpanFull(),
+
+                Section::make('Caption Media Sosial')
+                    ->schema([
+                        TextInput::make('caption_keywords')
+                            ->label('Kata kunci')
+                            ->placeholder('Contoh: Musrenbang, Desa, Infrastruktur, 2025')
+                            ->helperText('Pisahkan kata kunci dengan koma untuk memperjelas konteks caption.')
+                            ->dehydrated(false)
+                            ->maxLength(500),
+
+                        TextInput::make('caption_brand_style')
+                            ->label('Gaya brand')
+                            ->placeholder('Contoh: Formal, bersahabat, informatif')
+                            ->helperText('Tuliskan arah gaya bahasa atau tone of voice brand Anda.')
+                            ->dehydrated(false)
+                            ->maxLength(255),
+
+                        TextInput::make('caption_max_length')
+                            ->label('Panjang maksimal (karakter)')
+                            ->numeric()
+                            ->default(220)
+                            ->minValue(50)
+                            ->maxValue(500)
+                            ->dehydrated(false),
+
+                        Textarea::make('generated_caption')
+                            ->label('Generated caption')
+                            ->rows(4)
+                            ->helperText('Hasil caption AI akan tersimpan ke kolom generated_caption.')
+                            ->columnSpanFull(),
+
+                        Actions::make([
+                            Action::make('generate_caption')
+                                ->label('Generate Caption AI')
+                                ->icon('heroicon-o-sparkles')
+                                ->color('primary')
+                                ->action('generateCaption')
+                                ->disabled(fn (Get $get) => blank($get('caption_keywords'))
+                                    || blank($get('caption_brand_style'))
+                                    || blank($get('caption_max_length'))),
+                        ])
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
             ]);
     }
