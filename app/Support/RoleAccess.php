@@ -26,6 +26,7 @@ class RoleAccess
             'filament.admin.resources.pajak-kendaraan' => 'Pajak Kendaraan Dinas',
             'filament.admin.resources.vehicle-assets' => 'Data Kendaraan',
             'filament.admin.resources.vehicle-tax-reminder-logs' => 'Log Pengingat Pajak',
+            'filament.admin.resources.instagram-posts' => 'Instagram',
             'filament.admin.resources.social-accounts' => 'Integrasi Instagram',
             'filament.admin.pages.laporan-surat-masuk-bulanan' => 'Laporan Surat Masuk Bulanan',
             'filament.admin.pages.role-access-settings' => 'Pengaturan Hak Akses',
