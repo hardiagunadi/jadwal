@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'instagram' => [
+        'graph_url' => env('INSTAGRAM_GRAPH_URL', 'https://graph.facebook.com/v21.0'),
+        'ig_user_id' => env('INSTAGRAM_IG_USER_ID'),
+        'access_token' => env('INSTAGRAM_ACCESS_TOKEN'),
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+    ],
+
 ];
