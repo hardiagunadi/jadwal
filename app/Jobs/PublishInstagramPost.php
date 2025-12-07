@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\SocialAccount;
+use App\Services\InstagramPublisher;
 use App\Models\InstagramPost;
 use App\Models\User;
 use App\Notifications\InstagramPostFailed;
@@ -12,6 +14,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
 

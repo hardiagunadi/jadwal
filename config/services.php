@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'facebook' => [
+        'app_id' => env('FACEBOOK_APP_ID'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+        'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v20.0'),
+        'graph_url' => env('FACEBOOK_GRAPH_URL', 'https://graph.facebook.com/'),
     'instagram' => [
         'token' => env('INSTAGRAM_ACCESS_TOKEN'),
         'token_expires_at' => env('INSTAGRAM_TOKEN_EXPIRES_AT'),
