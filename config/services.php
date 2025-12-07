@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'instagram' => [
+        'token' => env('INSTAGRAM_ACCESS_TOKEN'),
+        'token_expires_at' => env('INSTAGRAM_TOKEN_EXPIRES_AT'),
+    ],
+
 ];
