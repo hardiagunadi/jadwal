@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\TindakLanjutReminderLog;
+use App\Models\CaptionGenerationLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ class Kegiatan extends Model
         'waktu',
         'tempat',
         'keterangan',
+        'generated_caption',
                 'surat_undangan',   // <--- TAMBAHKAN
                 'sudah_disposisi',   // <--- baru
         'tampilkan_di_public',
@@ -51,6 +53,11 @@ class Kegiatan extends Model
     public function tindakLanjutReminderLogs()
     {
         return $this->hasMany(TindakLanjutReminderLog::class);
+    }
+
+    public function captionGenerationLogs()
+    {
+        return $this->hasMany(CaptionGenerationLog::class);
     }
 
     protected static function booted(): void
