@@ -85,6 +85,15 @@ class KegiatanForm
                                 $set('surat_undangan', $storedPath);
 
                                 static::populateFieldsFromPdf($storedPath, $set);
+
+                                $nomor = trim((string) $get('nomor'));
+                                /** @var ?Kegiatan $record */
+                                $record = $get('record');
+                                $existing = static::findDuplicateNomor($nomor, $record);
+
+                                if ($nomor !== '' && $existing) {
+                                    static::notifyDuplicateNomor($nomor, $existing);
+                                }
                             })
                             ->openable(),
                         FileUpload::make('lampiran_surat')
@@ -171,27 +180,13 @@ class KegiatanForm
                                     return;
                                 }
 
-                                $existing = Kegiatan::query()
-                                    ->whereRaw('LOWER(TRIM(nomor)) = ?', [strtolower($nomor)])
-                                    ->when(
-                                        $record,
-                                        fn ($query) => $query->where('id', '!=', $record->id)
-                                    )
-                                    ->first();
+                                $existing = static::findDuplicateNomor($nomor, $record);
 
                                 if (! $existing) {
                                     return;
                                 }
 
-                                Notification::make()
-                                    ->title('Nomor surat duplikat')
-                                    ->body(
-                                        "Nomor surat {$nomor} sudah terdaftar untuk surat "
-                                        . ($existing->nama_kegiatan ?? '-')
-                                    )
-                                    ->danger()
-                                    ->persistent()
-                                    ->send();
+                                static::notifyDuplicateNomor($nomor, $existing);
                             }),
 
                         TextInput::make('nama_kegiatan')
@@ -391,6 +386,36 @@ class KegiatanForm
             'k' => (int) ($number * 1024),
             default => (int) $number,
         };
+    }
+
+    protected static function findDuplicateNomor(string $nomor, ?Kegiatan $record): ?Kegiatan
+    {
+        $normalized = trim($nomor);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        return Kegiatan::query()
+            ->whereRaw('LOWER(TRIM(nomor)) = ?', [strtolower($normalized)])
+            ->when(
+                $record,
+                fn ($query) => $query->where('id', '!=', $record->id)
+            )
+            ->first();
+    }
+
+    protected static function notifyDuplicateNomor(string $nomor, Kegiatan $existing): void
+    {
+        Notification::make()
+            ->title('Nomor surat duplikat')
+            ->body(
+                "Nomor surat {$nomor} sudah terdaftar untuk surat "
+                . ($existing->nama_kegiatan ?? '-')
+            )
+            ->danger()
+            ->persistent()
+            ->send();
     }
 
     protected static function populateFieldsFromPdf(?string $storedPath, callable $set): void
