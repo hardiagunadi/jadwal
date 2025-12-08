@@ -82,7 +82,8 @@ class KegiatansTable
                 TextColumn::make('batas_tindak_lanjut')
                     ->label('Batas TL')
                     ->dateTime('d-m-Y H:i')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn (?Kegiatan $record) => $record?->jenis_surat === 'tindak_lanjut'),
 
                 TextColumn::make('tindak_lanjut_selesai_at')
                     ->label('Status TL')
