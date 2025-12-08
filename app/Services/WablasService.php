@@ -145,7 +145,7 @@ class WablasService
 
         $lampiranUrl = $this->getLampiranUrl($kegiatan->lampiran_surat ?? null);
         if ($lampiranUrl) {
-            $lines[] = '📎 Lampiran:';
+            $lines[] = '📎 Lampiran Surat:';
             $lines[] = $lampiranUrl;
             $lines[] = '';
         }
@@ -401,18 +401,18 @@ class WablasService
         foreach ($items as $kegiatan) {
             // Nomor + nama kegiatan (dibold)
             $lines[] = '*' . $no . '. ' . ($kegiatan->nama_kegiatan ?? '-') . '*';
-            $lines[] = '';
+            //$lines[] = '';
 
             // Waktu & tempat
-            $lines[] = '  ⏰ ' . ($kegiatan->waktu ?? '-');
-            $lines[] = '  📍 ' . ($kegiatan->tempat ?? '-');
+            $lines[] = '   ⏰ ' . ($kegiatan->waktu ?? '-');
+            $lines[] = '   📍 ' . ($kegiatan->tempat ?? '-');
             $lines[] = '';
 
             // Personil (Penerima Disposisi)
             $personils = $kegiatan->personils ?? collect();
 
             if ($personils->isNotEmpty()) {
-                $lines[] = '  👥 Penerima Disposisi:';
+                $lines[] = '   👥 Penerima Disposisi:';
 
                 $i = 1;
                 foreach ($personils as $p) {
@@ -445,7 +445,7 @@ class WablasService
             // KETERANGAN (hanya kalau diisi)
             $keterangan = trim((string) ($kegiatan->keterangan ?? ''));
             if ($keterangan !== '') {
-                $lines[] = '  📝 Keterangan:';
+                $lines[] = '   📝 Keterangan:';
                 $lines[] = '      ' . $keterangan;
                 $lines[] = '';
             }
@@ -453,7 +453,13 @@ class WablasService
             // Link surat singkat
             $suratUrl = $this->getShortSuratUrl($kegiatan);
             if ($suratUrl) {
-                $lines[] = '  📎 Link Surat: ' . $suratUrl;
+                $lines[] = '   📎 Link Surat: ' . $suratUrl;
+                $lines[] = '';
+            }
+
+            $lampiranUrl = $this->getLampiranUrl($kegiatan->lampiran_surat ?? null);
+            if ($lampiranUrl) {
+                $lines[] = '   📎 Lampiran: ' . $lampiranUrl;
                 $lines[] = '';
             }
 
