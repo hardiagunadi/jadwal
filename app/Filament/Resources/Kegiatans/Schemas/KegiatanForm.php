@@ -141,6 +141,28 @@ class KegiatanForm
                             ->maxLength(100)
                             ->helperText('Akan otomatis diisi dari PDF jika pola nomor surat dikenali.')
                             ->unique(table: Kegiatan::class, column: 'nomor', ignoreRecord: true)
+                            ->dehydrateStateUsing(fn ($state) => trim((string) $state))
+                            ->rule(function (?Kegiatan $record) {
+                                return function (string $attribute, $value, \Closure $fail) use ($record) {
+                                    $normalized = trim((string) $value);
+
+                                    if ($normalized === '') {
+                                        return;
+                                    }
+
+                                    $exists = Kegiatan::query()
+                                        ->whereRaw('LOWER(TRIM(nomor)) = ?', [strtolower($normalized)])
+                                        ->when(
+                                            $record,
+                                            fn ($query) => $query->where('id', '!=', $record->id)
+                                        )
+                                        ->exists();
+
+                                    if ($exists) {
+                                        $fail('Nomor surat sudah terdaftar.');
+                                    }
+                                };
+                            })
                             ->live(onBlur: true)
                             ->afterStateUpdated(function ($state, callable $set, Get $get, ?Kegiatan $record) {
                                 $nomor = trim((string) $state);
