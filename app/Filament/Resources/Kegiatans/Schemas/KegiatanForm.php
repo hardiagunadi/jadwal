@@ -172,7 +172,7 @@ class KegiatanForm
                                 }
 
                                 $existing = Kegiatan::query()
-                                    ->where('nomor', $nomor)
+                                    ->whereRaw('LOWER(TRIM(nomor)) = ?', [strtolower($nomor)])
                                     ->when(
                                         $record,
                                         fn ($query) => $query->where('id', '!=', $record->id)
