@@ -251,12 +251,9 @@ class WablasService
     {
         $mention = $this->formatMention($personil->no_wa);
 
-        if (! $mention) {
-            return null;
-        }
-
         $name = trim((string) $personil->nama);
         $jabatan = trim((string) $personil->jabatan);
+        $label = '';
 
         if ($name !== '') {
             $label = $name;
@@ -264,7 +261,17 @@ class WablasService
             if ($jabatan !== '') {
                 $label .= ' - ' . $jabatan;
             }
+        } elseif ($jabatan !== '') {
+            $label = $jabatan;
+        }
 
+        // Jika nomor tidak ada / tidak valid, tetap tampilkan nama saja.
+        if (! $mention) {
+            return $label !== '' ? $label : null;
+        }
+
+        // Jika nomor ada, tampilkan mention + label (kalau tersedia).
+        if ($label !== '') {
             return $mention . ' (' . $label . ')';
         }
 
