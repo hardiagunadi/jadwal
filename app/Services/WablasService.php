@@ -287,6 +287,8 @@ class WablasService
      */
     protected function sendTextToGroup(string $groupId, string $message): array
     {
+        $groupId = trim($groupId);
+
         if (! $this->hasClientCredentials() || $groupId === '') {
             return [
                 'success' => false,
@@ -794,31 +796,53 @@ class WablasService
             ];
         }
 
-        $ids = collect($groupIds)
+        $rawIds = collect($groupIds)
             ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => trim((string) $id))
+            ->filter()
+            ->values();
+
+        if ($rawIds->isEmpty()) {
+            return [
+                'success' => false,
+                'results' => [],
+            ];
+        }
+
+        $numericIds = $rawIds
+            ->filter(fn ($id) => ctype_digit($id))
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
 
-        if ($ids->isEmpty()) {
-            return [
-                'success' => false,
-                'results' => [],
-            ];
-        }
-
         $groups = Group::query()
-            ->whereIn('id', $ids)
+            ->where(function ($query) use ($numericIds, $rawIds) {
+                $hasCondition = false;
+
+                if ($numericIds->isNotEmpty()) {
+                    $query->whereIn('id', $numericIds);
+                    $hasCondition = true;
+                }
+
+                if ($rawIds->isNotEmpty()) {
+                    $method = $hasCondition ? 'orWhereIn' : 'whereIn';
+                    $query->{$method}('wablas_group_id', $rawIds);
+                }
+            })
             ->get();
 
         if ($groups->isEmpty()) {
+            Log::warning('WablasService: sendAgendaToGroups tidak menemukan grup tujuan', [
+                'input_ids' => $rawIds->all(),
+            ]);
+
             return [
                 'success' => false,
                 'results' => [],
             ];
         }
 
-        $message = $this->buildAgendaMessageForGroups($kegiatan, $ids->all());
+        $message = $this->buildAgendaMessageForGroups($kegiatan, $groups->pluck('id')->all());
 
         $results = [];
         $success = false;
@@ -827,6 +851,11 @@ class WablasService
             $phone = $this->resolveGroupPhone($group);
 
             if (! $phone) {
+                Log::warning('WablasService: ID grup WA tidak tersedia', [
+                    'group_id' => $group->id,
+                    'group_name' => $group->nama,
+                ]);
+
                 $results[$group->id] = [
                     'success' => false,
                     'error' => 'ID grup WA tidak tersedia',
@@ -852,17 +881,38 @@ class WablasService
 
     protected function resolveGroupPhone(Group $group): ?string
     {
-        if (! empty($group->wablas_group_id)) {
-            return $group->wablas_group_id;
+        $stored = trim((string) $group->wablas_group_id);
+
+        if ($stored !== '') {
+            return $stored;
         }
 
         $key = Str::slug((string) $group->nama, '_');
+        $candidates = [];
 
         if ($key !== '') {
-            $mapped = $this->groupMappings[$key] ?? null;
+            $candidates[] = $key;
+            $altKeys = [
+                str_replace('grup_', 'group_', $key),
+                str_replace('group_', 'grup_', $key),
+            ];
 
-            if (is_string($mapped) && $mapped !== '') {
-                return $mapped;
+            foreach ($altKeys as $altKey) {
+                if ($altKey !== $key) {
+                    $candidates[] = $altKey;
+                }
+            }
+        }
+
+        foreach (array_unique($candidates) as $candidate) {
+            $mapped = $this->groupMappings[$candidate] ?? null;
+
+            if (is_string($mapped)) {
+                $mapped = trim($mapped);
+
+                if ($mapped !== '') {
+                    return $mapped;
+                }
             }
         }
 

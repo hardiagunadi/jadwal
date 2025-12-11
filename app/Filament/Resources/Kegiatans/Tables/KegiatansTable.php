@@ -192,6 +192,83 @@ class KegiatansTable
                     }),
                     **/
 
+                Action::make('kirim_wa_multi_grup')
+                    ->label('Kirim WA Multi Grup')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim agenda ini ke grup WhatsApp yang dipilih di form?')
+                    ->action(function (Kegiatan $record) {
+                        /** @var WablasService $wablas */
+                        $wablas = app(WablasService::class);
+
+                        // Pastikan relasi ter-load untuk ambil nama grup dan personil (dipakai di pesan).
+                        $record->loadMissing('groups', 'personils');
+
+                        $groupIds = $record->groups?->pluck('id')
+                            ->filter()
+                            ->unique()
+                            ->values()
+                            ->all() ?? [];
+
+                        if (empty($groupIds)) {
+                            Notification::make()
+                                ->title('Tidak ada grup tujuan')
+                                ->body('Agenda ini belum memiliki grup WhatsApp tujuan. Tambahkan grup pada form kegiatan.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $result = $wablas->sendAgendaToGroups($record, $groupIds);
+                        $results = collect($result['results'] ?? []);
+
+                        $successIds = $results
+                            ->filter(fn ($res) => $res['success'] ?? false)
+                            ->keys();
+
+                        $failedIds = $results
+                            ->filter(fn ($res) => ! ($res['success'] ?? false))
+                            ->keys();
+
+                        $groupNames = $record->groups->keyBy('id')->map->nama;
+
+                        if ($result['success'] ?? false) {
+                            $successLabels = $successIds
+                                ->map(fn ($id) => $groupNames[$id] ?? ('ID ' . $id))
+                                ->implode(', ');
+
+                            $body = 'Agenda berhasil dikirim.';
+                            if ($successLabels !== '') {
+                                $body .= ' Grup: ' . $successLabels . '.';
+                            }
+
+                            if ($failedIds->isNotEmpty()) {
+                                $failedLabels = $failedIds
+                                    ->map(fn ($id) => $groupNames[$id] ?? ('ID ' . $id))
+                                    ->implode(', ');
+
+                                $body .= ' (Gagal: ' . $failedLabels . ')';
+                            }
+
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body($body)
+                                ->success()
+                                ->send();
+                        } else {
+                            $failedLabels = $groupIds
+                                ? collect($groupIds)->map(fn ($id) => $groupNames[$id] ?? ('ID ' . $id))->implode(', ')
+                                : 'Tidak ada grup';
+
+                            Notification::make()
+                                ->title('Gagal')
+                                ->body('Tidak dapat mengirim agenda ke grup: ' . $failedLabels . '. Cek token/ID grup Wablas.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 // Kirim ke WA semua personil 1 kegiatan
                 Action::make('kirim_wa_personil')
                     ->label('Kirim WA Personil')
