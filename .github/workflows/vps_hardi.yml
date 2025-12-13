@@ -1,4 +1,4 @@
-name: Deploy to VPS watumalang.online
+name: Deploy to VPS hardiagunadi.web.id
 
 on:
   push:
