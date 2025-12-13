@@ -28,7 +28,7 @@ jobs:
           SSH_HOST: hardiagunadi.web.id
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST" << 'EOF'
+          ssh "$SSH_USER@$SSH_HOST2" << 'EOF'
             set -e
 
             cd /var/www/jadwal
