@@ -26,9 +26,9 @@ jobs:
       - name: Deploy to hardiagunadi.web.id
         env:
           SSH_HOST: hardiagunadi.web.id
-          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_USER: ${{ secrets.SSH_USER2 }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST2" << 'EOF'
+          ssh "$SSH_USER2@$SSH_HOST2" << 'EOF'
             set -e
 
             cd /var/www/jadwal
