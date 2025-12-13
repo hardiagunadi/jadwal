@@ -1,53 +1,62 @@
-name: Deploy Laravel (1 VPS, Prod & Staging)
+name: Deploy to VPS
+  env:
+    SSH_HOST: ${{ secrets.SSH_HOST }}
+    SSH_USER: ${{ secrets.SSH_USER }}
+    BRANCH: ${{ github.ref_name }}
+  run: |
+    ssh "$SSH_USER@$SSH_HOST" << EOF
+      set -e
 
-on:
-  push:
-    branches:
-      - master
-      - multigroup
+      echo "Deploy branch: $BRANCH"
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+      if [ "$BRANCH" = "master" ]; then
+        APP_DIR=/var/www/jadwal-prod
+      else
+        APP_DIR=/var/www/jadwal-staging
+      fi
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      RELEASE_DIR=\$APP_DIR/releases/\$(date +%Y%m%d%H%M%S)
+      SHARED_DIR=\$APP_DIR/shared
+      PREV_RELEASE=\$(readlink -f \$APP_DIR/current || true)
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      echo "➡️ New release: \$RELEASE_DIR"
 
-      - name: Add VPS to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+      mkdir -p "\$RELEASE_DIR"
 
-      - name: Deploy to VPS
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          ssh "$SSH_USER@$SSH_HOST" << 'EOF'
-            set -e
+      git clone -b "$BRANCH" https://github.com/hardiagunadi/jadwal.git "\$RELEASE_DIR"
 
-            if [ "$BRANCH" = "master" ]; then
-              APP_DIR=/var/www/jadwal-prod
-            else
-              APP_DIR=/var/www/jadwal-staging
-            fi
+      ln -sfn "\$SHARED_DIR/.env" "\$RELEASE_DIR/.env"
+      rm -rf "\$RELEASE_DIR/storage"
+      ln -sfn "\$SHARED_DIR/storage" "\$RELEASE_DIR/storage"
 
-            RELEASE_DIR=$APP_DIR/releases/$(date +%Y%m%d%H%M%S)
-            SHARED_DIR=$APP_DIR/shared
-            PREV_RELEASE=$(readlink -f $APP_DIR/current || true)
+      cd "\$RELEASE_DIR"
+      /usr/local/bin/composer install --no-dev --optimize-autoloader
 
-            echo "➡️ New release: $RELEASE_DIR"
+      echo "🧪 Run migration"
+      if ! php artisan migrate --force; then
+        echo "❌ Migration failed, rollback"
+        rm -rf "\$RELEASE_DIR"
+        exit 1
+      fi
 
-            mkdir -p "$RELEASE_DIR"
+      php artisan optimize:clear
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
 
-            git clone -b "$BRANCH" https://github.com/hardiagunadi/jadwal.git "$RELEASE_DIR"
+      echo "🔄 Switch symlink"
+      ln -sfn "\$RELEASE_DIR" "\$APP_DIR/current"
 
-            ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
-            rm -
+      echo "❤️ Health check"
+      if ! curl -fs http://localhost/health; then
+        echo "❌ Health check failed, rollback"
+        ln -sfn "\$PREV_RELEASE" "\$APP_DIR/current"
+        exit 1
+      fi
+
+      echo "🧹 Cleanup old releases"
+      cd "\$APP_DIR/releases"
+      ls -dt */ | tail -n +6 | xargs rm -rf
+
+      echo "✅ Deploy success"
+    EOF
