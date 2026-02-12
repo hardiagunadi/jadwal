@@ -44,7 +44,6 @@
             font-size: 8.5pt;
             padding: 1px 3px;
             vertical-align: top;
-            overflow: hidden;
         }
 
         .b  { font-weight: bold; }
@@ -260,7 +259,7 @@
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br sm" style="padding:1px 3px;"></td>
-            <td colspan="4" class="br" style="padding:1px 3px;">1.&nbsp;PPn.</td>
+            <td colspan="4" style="padding:1px 3px;">1.&nbsp;PPn.</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($ppn) }}</td>
         </tr>
@@ -270,7 +269,7 @@
             <td colspan="5" class="bl" style="padding:1px 3px;">Kode rekening</td>
             <td colspan="1" class="c">:</td>
             <td colspan="6" class="br b" style="padding:1px 3px;">{{ $kodeRek }}</td>
-            <td colspan="4" class="br" style="padding:1px 3px;">2.&nbsp;PPh 21</td>
+            <td colspan="4" style="padding:1px 3px;">2.&nbsp;PPh 21</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph21) }}</td>
         </tr>
@@ -282,7 +281,7 @@
             <td colspan="6" class="br c sm" style="padding:1px 3px;">
                 Watumalang,{{ $tanggalRaw ? ' ' . $tanggalRaw : '' }}&nbsp;&nbsp; {{ $tahun }}
             </td>
-            <td colspan="4" class="br" style="padding:1px 3px;">3.&nbsp;PPh 22</td>
+            <td colspan="4" style="padding:1px 3px;">3.&nbsp;PPh 22</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph22) }}</td>
         </tr>
@@ -292,7 +291,7 @@
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br c sm" style="padding:1px 3px;">Yang berhak menerima</td>
-            <td colspan="4" class="br" style="padding:1px 3px;">4.&nbsp;PPh 23</td>
+            <td colspan="4" style="padding:1px 3px;">4.&nbsp;PPh 23</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph23) }}</td>
         </tr>
@@ -302,7 +301,7 @@
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br"></td>
-            <td colspan="4" class="br c b" style="padding:1px 3px; vertical-align:bottom;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jumlah</td>
+            <td colspan="4" class="c b" style="padding:1px 3px; vertical-align:bottom;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jumlah</td>
             <td colspan="1" style="padding:1px 3px; vertical-align:bottom;">Rp.</td>
             <td colspan="3" class="br bb r" style="padding:1px 3px; vertical-align:bottom;">{{ $rp($totalPajak) }}</td>
         </tr>
@@ -311,9 +310,7 @@
         <tr>
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
-            <td colspan="6" class="br c b u vb" style="padding:1px 3px;">
-                @if($personil) {{ $personil->nama }} @else &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230; @endif
-            </td>
+            <td colspan="6" class="br c b u vb" style="padding:1px 3px;">Terlampir</td>
             <td colspan="8" class="br c sm" style="padding:1px 3px;">
                 Pengeluaran / pembelian dilakukan berdasarkan :
             </td>
@@ -323,54 +320,52 @@
         <tr>
             <td colspan="5" class="bl bb"></td>
             <td colspan="1" class="bb"></td>
-            <td colspan="6" class="br bb c sm" style="padding:1px 3px;">
-                @if($personil && $personil->nip) NIP. {{ $personil->nip }} @endif
-            </td>
+            <td colspan="6" class="br bb c sm" style="padding:1px 3px;"></td>
             <td colspan="8" class="br bb"></td>
         </tr>
 
         {{-- ══ SIGNATURE AREA (rows 23–27) ══ --}}
-        {{-- 4 kolom: 6 + 5 + 7 + 2 = 20 --}}
+        {{-- 4 kolom sama lebar: 5 + 5 + 5 + 5 = 20 --}}
         {{-- Garis: bl/br outer + br divider antar kolom. bb pada baris terakhir --}}
 
         {{-- ROW 23 : Header TTD --}}
         <tr>
-            <td colspan="6"  class="bl br" style="padding:1px 3px;"></td>
+            <td colspan="5"  class="bl br"></td>
             <td colspan="5"  class="br b c" style="padding:1px 3px;">Mengetahui &amp; Menyetujui</td>
-            <td colspan="7"  class="br b c" style="padding:1px 3px;">Yang Membayarkan</td>
-            <td colspan="2"  class="br"></td>
+            <td colspan="5"  class="br b c" style="padding:1px 3px;">Yang Membayarkan</td>
+            <td colspan="5"  class="br"></td>
         </tr>
 
         {{-- ROW 24 : Sub-label TTD --}}
         <tr>
-            <td colspan="6"  class="bl br c sm" style="padding:1px 3px;">Yang menerima barang</td>
+            <td colspan="5"  class="bl br c sm" style="padding:1px 3px;">Yang menerima barang</td>
             <td colspan="5"  class="br c sm"    style="padding:1px 3px;">Pengguna Anggaran</td>
-            <td colspan="7"  class="br c sm"    style="padding:1px 3px;">Bendahara Pengeluaran</td>
-            <td colspan="2"  class="br c sm"    style="padding:1px 3px;">PPTK</td>
+            <td colspan="5"  class="br c sm"    style="padding:1px 3px;">Bendahara Pengeluaran</td>
+            <td colspan="5"  class="br c sm"    style="padding:1px 3px;">PPTK</td>
         </tr>
 
         {{-- ROW 25 : Ruang TTD --}}
         <tr class="h-ttd">
-            <td colspan="6"  class="bl br"></td>
+            <td colspan="5"  class="bl br"></td>
             <td colspan="5"  class="br"></td>
-            <td colspan="7"  class="br"></td>
-            <td colspan="2"  class="br"></td>
+            <td colspan="5"  class="br"></td>
+            <td colspan="5"  class="br"></td>
         </tr>
 
         {{-- ROW 26 : Nama pejabat --}}
         <tr>
-            <td colspan="6"  class="bl br c" style="padding:1px 3px;">( &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;. )</td>
+            <td colspan="5"  class="bl br c" style="padding:1px 3px;">( &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;. )</td>
             <td colspan="5"  class="br b c"  style="padding:1px 3px;">SUBUH ONI WIYONO, SE., MM</td>
-            <td colspan="7"  class="br b c"  style="padding:1px 3px;">DEWI ASMARANI H, A. Md</td>
-            <td colspan="2"  class="br b c"  style="padding:1px 3px;">DWI ATMOKO, S.E</td>
+            <td colspan="5"  class="br b c"  style="padding:1px 3px;">DEWI ASMARANI H, A. Md</td>
+            <td colspan="5"  class="br b c"  style="padding:1px 3px;">DWI ATMOKO, S.E</td>
         </tr>
 
         {{-- ROW 27 : NIP pejabat + bb penutup bawah --}}
         <tr>
-            <td colspan="6"  class="bl br bb"></td>
+            <td colspan="5"  class="bl br bb"></td>
             <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19680331 199603 1 007</td>
-            <td colspan="7"  class="br bb c sm" style="padding:1px 3px;">NIP. 19930702 202012 2 010</td>
-            <td colspan="2"  class="br bb c sm" style="padding:1px 3px;">NIP. 19720525 200701 1 017</td>
+            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19930702 202012 2 010</td>
+            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19720525 200701 1 017</td>
         </tr>
     </table>
 
