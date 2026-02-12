@@ -54,14 +54,14 @@ class SuratKeluarResource extends Resource
                         ->afterStateUpdated(function ($state, callable $set) {
                             if ($state === 'master') {
                                 $set('master_id', null);
-                            } else {
-                                $set('kode_surat_id', null);
                             }
                         })
                         ->hiddenOn('edit'),
 
                     Select::make('kode_surat_id')
-                        ->label('Kode Klasifikasi')
+                        ->label(fn (callable $get) => ($get('jenis_nomor') ?? 'master') === 'master'
+                            ? 'Kode Klasifikasi'
+                            : 'Kode Klasifikasi (opsional, kosongkan untuk ikut master)')
                         ->options(fn () => KodeSurat::query()
                             ->orderBy('kode')
                             ->limit(50)
@@ -106,7 +106,6 @@ class SuratKeluarResource extends Resource
                         ->placeholder('Ketik kode atau keterangan')
                         ->required(fn (callable $get) => ($get('jenis_nomor') ?? 'master') === 'master')
                         ->live()
-                        ->visible(fn (callable $get) => ($get('jenis_nomor') ?? 'master') === 'master')
                         ->hiddenOn('edit'),
 
                     Select::make('master_id')

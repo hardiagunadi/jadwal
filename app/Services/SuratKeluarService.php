@@ -59,7 +59,8 @@ class SuratKeluarService
     public function createSisipan(SuratKeluar $master, string $perihal, array $context = []): SuratKeluar
     {
         $tahun = $master->tahun;
-        $kodeId = $master->kode_surat_id;
+        // Gunakan kode_surat_id dari context jika ada, jika tidak gunakan dari master
+        $kodeId = $context['kode_surat_id'] ?? $master->kode_surat_id;
         $nomorUrut = $master->nomor_urut;
         $tanggalSurat = $context['tanggal_surat'] ?? $master->tanggal_surat ?? now();
 
@@ -151,6 +152,27 @@ class SuratKeluarService
                 return '-';
             }
 
+            // Jika user memilih custom kode klasifikasi untuk sisipan
+            if ($kodeSuratId && $kodeSuratId !== $master->kode_surat_id) {
+                $kode = KodeSurat::find($kodeSuratId);
+                if (! $kode) {
+                    return '-';
+                }
+
+                // Hitung next sisipan untuk kombinasi kode custom + nomor master
+                $maxSisipan = SuratKeluar::query()
+                    ->where('kode_surat_id', $kodeSuratId)
+                    ->where('tahun', $master->tahun)
+                    ->where('nomor_urut', $master->nomor_urut)
+                    ->max('nomor_sisipan');
+
+                $next = ((int) $maxSisipan) + 1;
+                $label = $kode->kode;
+
+                return $label . '/' . $master->nomor_urut . '.' . $next;
+            }
+
+            // Gunakan kode dari master
             $next = $this->previewNextSisipanNumber($master);
             $label = $master->kodeSurat?->kode ?? '-';
 
