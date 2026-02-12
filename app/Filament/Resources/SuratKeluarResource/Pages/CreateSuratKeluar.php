@@ -36,6 +36,12 @@ class CreateSuratKeluar extends CreateRecord
 
         if (($data['jenis_nomor'] ?? 'master') === 'sisipan') {
             $master = SuratKeluar::findOrFail($data['master_id']);
+
+            // Jika user memilih kode klasifikasi custom untuk sisipan
+            if (!empty($data['kode_surat_id'])) {
+                $context['kode_surat_id'] = $data['kode_surat_id'];
+            }
+
             return $service->createSisipan($master, (string) $data['perihal'], $context);
         }
 
