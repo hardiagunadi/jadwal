@@ -589,10 +589,10 @@
                                     </div>
                                 @endforeach
                             </div>
-                        @elseif(($item['kegiatan_kantor'] ?? collect())->isNotEmpty())
+                        @elseif(($item['kegiatan_kantor'] ?? collect())->filter(fn($k) => !empty($k->tempat))->isNotEmpty())
                             <div class="agenda-label is-kantor">Agenda di kantor</div>
                             <div class="agenda-list">
-                                @foreach($item['kegiatan_kantor'] as $kegiatan)
+                                @foreach($item['kegiatan_kantor']->filter(fn($k) => !empty($k->tempat)) as $kegiatan)
                                     <div class="agenda-item is-kantor">
                                         <strong>{{ $kegiatan->nama_kegiatan ?? '-' }}</strong>
                                         <div class="agenda-meta">
