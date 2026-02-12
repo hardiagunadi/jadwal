@@ -149,11 +149,12 @@
         </tr>
         {{-- ROW 2 : Nomor + Lembar ke --}}
         <tr>
-            <td colspan="11" class="sm c" style="padding:1px 4px; vertical-align:bottom;">
-                Nomor :&nbsp; {{ $nomor ?: '900 / ____________ / ' . $tahun }}
-            </td>
-            <td colspan="6" class="br xs r" style="padding:1px 3px; vertical-align:bottom;">
-                Lembar ke &nbsp;: I / II / III / IV
+            <td colspan="17" class="br sm" style="padding:1px 3px; vertical-align:bottom;">
+                <div style="display:flex; align-items:baseline;">
+                    <div style="flex:1;"></div>
+                    <div>Nomor :&nbsp; {{ $nomor ?: '900 / ____________ / ' . $tahun }}</div>
+                    <div style="flex:1; text-align:right; font-size:6.5pt;">Lembar ke &nbsp;: I / II / III / IV</div>
+                </div>
             </td>
         </tr>
         {{-- ROW 3 : kosong penutup logo --}}
@@ -164,25 +165,25 @@
         {{-- ══ ROWS 4–7 : Data header ══ --}}
         {{-- Garis: bl (kiri luar) + br (kanan luar) saja, tanpa horizontal internal --}}
         <tr>
-            <td colspan="8" class="bl sm" style="padding:1px 3px;">SKPD / Kode Rekening</td>
+            <td colspan="6" class="bl sm" style="padding:1px 3px;">SKPD / Kode Rekening</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="11" class="br sm" style="padding:1px 3px;">KECAMATAN WATUMALANG &nbsp;/</td>
+            <td colspan="13" class="br sm" style="padding:1px 3px;">KECAMATAN WATUMALANG &nbsp;/</td>
         </tr>
         <tr>
-            <td colspan="8" class="bl sm" style="padding:1px 3px;">Pengguna Angg. / Kuasa Peng. Angg.</td>
+            <td colspan="6" class="bl sm" style="padding:1px 3px;">Pengguna Angg. / Kuasa Peng. Angg.</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="11" class="br sm" style="padding:1px 3px;">{{ $pa ? strtoupper($pa->nama) : '—' }}</td>
+            <td colspan="13" class="br sm" style="padding:1px 3px;">{{ $pa ? strtoupper($pa->nama) : '—' }}</td>
         </tr>
         <tr>
-            <td colspan="8" class="bl sm" style="padding:1px 3px;">Bendahara Pengeluaran</td>
+            <td colspan="6" class="bl sm" style="padding:1px 3px;">Bendahara Pengeluaran</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="11" class="br sm" style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
+            <td colspan="13" class="br sm" style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
         </tr>
         {{-- ROW 7 : Tahun – bb penutup header --}}
         <tr>
-            <td colspan="8" class="bl bb sm" style="padding:1px 3px;">Tahun Anggaran</td>
+            <td colspan="6" class="bl bb sm" style="padding:1px 3px;">Tahun Anggaran</td>
             <td colspan="1" class="bb sm c">:</td>
-            <td colspan="11" class="br bb sm" style="padding:1px 3px;">{{ $tahun }}</td>
+            <td colspan="13" class="br bb sm" style="padding:1px 3px;">{{ $tahun }}</td>
         </tr>
 
         {{-- ══ ROW 8 : SURAT BUKTI PEMBAYARAN | KETERANGAN ══ --}}
