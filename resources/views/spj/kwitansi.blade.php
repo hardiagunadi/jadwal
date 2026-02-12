@@ -325,43 +325,43 @@
         {{-- 4 kolom sama lebar: 5 + 5 + 5 + 5 = 20 --}}
         {{-- Garis: bl/br outer + br divider antar kolom. bb pada baris terakhir --}}
 
-        {{-- ROW 23 : Header TTD --}}
+        {{-- ROW 23 : Header TTD — 4+5+6+5=20 --}}
         <tr>
-            <td colspan="5"  class="bl br"></td>
+            <td colspan="4"  class="bl br"></td>
             <td colspan="5"  class="br b c" style="padding:1px 3px;">Mengetahui &amp; Menyetujui</td>
-            <td colspan="5"  class="br b c" style="padding:1px 3px;">Yang Membayarkan</td>
+            <td colspan="6"  class="br b c" style="padding:1px 3px;">Yang Membayarkan</td>
             <td colspan="5"  class="br"></td>
         </tr>
 
         {{-- ROW 24 : Sub-label TTD --}}
         <tr>
-            <td colspan="5"  class="bl br c sm" style="padding:1px 3px;">Yang menerima barang</td>
+            <td colspan="4"  class="bl br c sm" style="padding:1px 3px;">Yang menerima barang</td>
             <td colspan="5"  class="br c sm"    style="padding:1px 3px;">Pengguna Anggaran</td>
-            <td colspan="5"  class="br c sm"    style="padding:1px 3px;">Bendahara Pengeluaran</td>
+            <td colspan="6"  class="br c sm"    style="padding:1px 3px;">Bendahara Pengeluaran</td>
             <td colspan="5"  class="br c sm"    style="padding:1px 3px;">PPTK</td>
         </tr>
 
         {{-- ROW 25 : Ruang TTD --}}
         <tr class="h-ttd">
-            <td colspan="5"  class="bl br"></td>
+            <td colspan="4"  class="bl br"></td>
             <td colspan="5"  class="br"></td>
-            <td colspan="5"  class="br"></td>
+            <td colspan="6"  class="br"></td>
             <td colspan="5"  class="br"></td>
         </tr>
 
         {{-- ROW 26 : Nama pejabat --}}
         <tr>
-            <td colspan="5"  class="bl br c" style="padding:1px 3px;">( &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;. )</td>
+            <td colspan="4"  class="bl br c" style="padding:1px 3px;">( &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;. )</td>
             <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $pa ? strtoupper($pa->nama) : '—' }}</td>
-            <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
+            <td colspan="6"  class="br b c"  style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
             <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $spj->personil ? strtoupper($spj->personil->nama) : '—' }}</td>
         </tr>
 
         {{-- ROW 27 : NIP pejabat + bb penutup bawah --}}
         <tr>
-            <td colspan="5"  class="bl br bb"></td>
+            <td colspan="4"  class="bl br bb"></td>
             <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $pa?->nip ? 'NIP. ' . $pa->nip : '' }}</td>
-            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $bendahara?->nip ? 'NIP. ' . $bendahara->nip : '' }}</td>
+            <td colspan="6"  class="br bb c sm" style="padding:1px 3px;">{{ $bendahara?->nip ? 'NIP. ' . $bendahara->nip : '' }}</td>
             <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $spj->personil?->nip ? 'NIP. ' . $spj->personil->nip : '' }}</td>
         </tr>
     </table>
