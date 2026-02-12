@@ -44,6 +44,19 @@ class PersonilForm
                             ->maxLength(50)
                             ->helperText('Isi akronim jabatan untuk nomor surat keluar (contoh: Sekre, Ekbang).'),
 
+                        Select::make('jabatan_lainnya')
+                            ->label('Jabatan Lainnya')
+                            ->options([
+                                'PA'                    => 'Pengguna Anggaran (PA)',
+                                'KPA'                   => 'Kuasa Pengguna Anggaran (KPA)',
+                                'Bendahara Pengeluaran' => 'Bendahara Pengeluaran',
+                                'PPTK'                  => 'PPTK',
+                            ])
+                            ->native(false)
+                            ->searchable()
+                            ->placeholder('— tidak ada —')
+                            ->helperText('Dipakai untuk mengisi tanda tangan di Kwitansi Dinas.'),
+
                         TextInput::make('pangkat')
                             ->label('Pangkat')
                             ->maxLength(100),

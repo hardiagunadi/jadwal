@@ -171,12 +171,12 @@
         <tr>
             <td colspan="8" class="bl sm" style="padding:1px 3px;">Pengguna Angg. / Kuasa Peng. Angg.</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="11" class="br sm" style="padding:1px 3px;">SUBUH ONI WIYONO, SE., MM</td>
+            <td colspan="11" class="br sm" style="padding:1px 3px;">{{ $pa ? strtoupper($pa->nama) : '—' }}</td>
         </tr>
         <tr>
             <td colspan="8" class="bl sm" style="padding:1px 3px;">Bendahara Pengeluaran</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="11" class="br sm" style="padding:1px 3px;">DEWI ASMARANI HONGGOWATI, A. Md</td>
+            <td colspan="11" class="br sm" style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
         </tr>
         {{-- ROW 7 : Tahun – bb penutup header --}}
         <tr>
@@ -355,17 +355,17 @@
         {{-- ROW 26 : Nama pejabat --}}
         <tr>
             <td colspan="5"  class="bl br c" style="padding:1px 3px;">( &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;. )</td>
-            <td colspan="5"  class="br b c"  style="padding:1px 3px;">SUBUH ONI WIYONO, SE., MM</td>
-            <td colspan="5"  class="br b c"  style="padding:1px 3px;">DEWI ASMARANI H, A. Md</td>
-            <td colspan="5"  class="br b c"  style="padding:1px 3px;">DWI ATMOKO, S.E</td>
+            <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $pa ? strtoupper($pa->nama) : '—' }}</td>
+            <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $bendahara ? strtoupper($bendahara->nama) : '—' }}</td>
+            <td colspan="5"  class="br b c"  style="padding:1px 3px;">{{ $spj->personil ? strtoupper($spj->personil->nama) : '—' }}</td>
         </tr>
 
         {{-- ROW 27 : NIP pejabat + bb penutup bawah --}}
         <tr>
             <td colspan="5"  class="bl br bb"></td>
-            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19680331 199603 1 007</td>
-            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19930702 202012 2 010</td>
-            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">NIP. 19720525 200701 1 017</td>
+            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $pa?->nip ? 'NIP. ' . $pa->nip : '' }}</td>
+            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $bendahara?->nip ? 'NIP. ' . $bendahara->nip : '' }}</td>
+            <td colspan="5"  class="br bb c sm" style="padding:1px 3px;">{{ $spj->personil?->nip ? 'NIP. ' . $spj->personil->nip : '' }}</td>
         </tr>
     </table>
 

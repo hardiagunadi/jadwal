@@ -23,66 +23,67 @@ class ListDpas extends ListRecords
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
                 ->form([
-                    FileUpload::make('pdf_file')
+                    FileUpload::make('pdf_files')
                         ->label('File PDF DPA (dari SIPD)')
                         ->acceptedFileTypes(['application/pdf'])
                         ->required()
+                        ->multiple()
                         ->disk('local')
                         ->directory('dpa-imports')
-                        ->helperText('Upload file PDF DPA yang diunduh dari SIPD Kemendagri.'),
+                        ->helperText('Upload satu atau beberapa file PDF DPA yang diunduh dari SIPD Kemendagri.'),
                 ])
                 ->action(function (array $data): void {
-                    $path = Storage::disk('local')->path($data['pdf_file']);
+                    /** @var DpaImportService $service */
+                    $service = app(DpaImportService::class);
 
-                    try {
-                        /** @var DpaImportService $service */
-                        $service = app(DpaImportService::class);
-                        $result = $service->parseAndImport($path);
+                    $berhasil = 0;
+                    $gagal = 0;
+                    $messages = [];
 
-                        $dpa = $result['dpa'];
-                        $isNew = $result['is_new'];
-                        $subBaru = $result['sub_baru'];
-                        $subUpdate = $result['sub_update'];
-                        $totalSub = $dpa->subKegiatans()->count();
-                        $totalRincian = $dpa->rincianBelanjas()->count();
+                    foreach ($data['pdf_files'] as $file) {
+                        $path = Storage::disk('local')->path($file);
 
-                        if ($isNew) {
-                            $title = 'DPA baru berhasil diimport';
-                            $body = "Nomor: {$dpa->nomor_dpa}\n"
-                                . "{$subBaru} sub kegiatan | {$totalRincian} rincian belanja";
-                        } elseif ($subBaru > 0) {
-                            $title = 'Sub kegiatan baru ditambahkan ke DPA';
-                            $body = "Nomor: {$dpa->nomor_dpa}\n"
-                                . "+{$subBaru} sub kegiatan baru ditambahkan"
-                                . ($subUpdate > 0 ? ", {$subUpdate} diperbarui" : '') . "\n"
-                                . "Total: {$totalSub} sub kegiatan | {$totalRincian} rincian belanja";
-                        } else {
-                            $title = 'DPA sudah ada — tidak ada perubahan';
-                            $body = "Nomor: {$dpa->nomor_dpa}\n"
-                                . "Sub kegiatan dalam file ini sudah tersimpan sebelumnya ({$subUpdate} sub diperbarui).\n"
-                                . "Total: {$totalSub} sub kegiatan | {$totalRincian} rincian belanja";
-                        }
+                        try {
+                            $result = $service->parseAndImport($path);
 
-                        Notification::make()
-                            ->title($title)
-                            ->body($body)
-                            ->success()
-                            ->send();
-                    } catch (\Throwable $e) {
-                        Notification::make()
-                            ->title('Gagal import DPA')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    } finally {
-                        // Hapus file upload sementara
-                        if (isset($data['pdf_file'])) {
-                            Storage::disk('local')->delete($data['pdf_file']);
+                            $dpa = $result['dpa'];
+                            $isNew = $result['is_new'];
+                            $subBaru = $result['sub_baru'];
+                            $subUpdate = $result['sub_update'];
+                            $totalSub = $dpa->subKegiatans()->count();
+                            $totalRincian = $dpa->rincianBelanjas()->count();
+
+                            if ($isNew) {
+                                $messages[] = "✓ {$dpa->nomor_dpa} — baru ({$subBaru} sub | {$totalRincian} rincian)";
+                            } elseif ($subBaru > 0) {
+                                $messages[] = "✓ {$dpa->nomor_dpa} — +{$subBaru} sub baru"
+                                    . ($subUpdate > 0 ? ", {$subUpdate} diperbarui" : '');
+                            } else {
+                                $messages[] = "↺ {$dpa->nomor_dpa} — sudah ada ({$subUpdate} sub diperbarui)";
+                            }
+
+                            $berhasil++;
+                        } catch (\Throwable $e) {
+                            $messages[] = "✗ " . basename($file) . ": " . $e->getMessage();
+                            $gagal++;
+                        } finally {
+                            Storage::disk('local')->delete($file);
                         }
                     }
+
+                    $total = count($data['pdf_files']);
+                    $title = $gagal === 0
+                        ? "Import selesai — {$berhasil} dari {$total} file berhasil"
+                        : "Import selesai — {$berhasil} berhasil, {$gagal} gagal";
+
+                    Notification::make()
+                        ->title($title)
+                        ->body(implode("\n", $messages))
+                        ->color($gagal === 0 ? 'success' : ($berhasil === 0 ? 'danger' : 'warning'))
+                        ->send();
                 })
                 ->modalHeading('Import DPA dari PDF SIPD')
-                ->modalDescription('Upload file PDF DPA dari SIPD Kemendagri. Beberapa sub kegiatan dalam satu unit memiliki nomor DPA yang sama — sistem akan otomatis menggabungkannya ke dalam satu DPA dan menambahkan sub kegiatan baru.')
+                ->modalDescription('Upload satu atau beberapa file PDF DPA dari SIPD Kemendagri. Beberapa sub kegiatan dalam satu unit memiliki nomor DPA yang sama — sistem akan otomatis menggabungkannya ke dalam satu DPA dan menambahkan sub kegiatan baru.')
                 ->modalSubmitActionLabel('Import'),
 
             CreateAction::make(),

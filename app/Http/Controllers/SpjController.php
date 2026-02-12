@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Personil;
 use App\Models\Spj;
 use Illuminate\View\View;
 
@@ -11,6 +12,9 @@ class SpjController extends Controller
     {
         $spj->load(['personil', 'dpaRincianBelanja.subKegiatan.dpa']);
 
-        return view('spj.kwitansi', compact('spj'));
+        $pa  = Personil::whereIn('jabatan_lainnya', ['PA', 'KPA'])->first();
+        $bendahara = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+
+        return view('spj.kwitansi', compact('spj', 'pa', 'bendahara'));
     }
 }

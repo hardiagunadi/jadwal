@@ -8,21 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('personils') || Schema::hasColumn('personils', 'nip')) {
-            return;
-        }
-
-
         Schema::table('personils', function (Blueprint $table) {
-            // NIP max 30 karakter, boleh NULL
-            $table->string('nip', 30)->nullable()->after('nama');
+            $table->string('jabatan_lainnya', 100)->nullable()->after('jabatan_akronim')
+                ->comment('Jabatan fungsional anggaran: PA, KPA, Bendahara Pengeluaran, PPTK');
         });
     }
 
     public function down(): void
     {
         Schema::table('personils', function (Blueprint $table) {
-            $table->dropColumn('nip');
+            $table->dropColumn('jabatan_lainnya');
         });
     }
 };
