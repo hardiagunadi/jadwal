@@ -12,6 +12,7 @@ use App\Http\Controllers\FilamentThemeController;
 use App\Http\Controllers\YieldPanelPreferenceController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\BanprovVerificationController;
+use App\Http\Controllers\SpjController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 // routes/web.php
@@ -67,6 +68,9 @@ Route::get('/kegiatan/{kegiatan}/sppd', [KegiatanSuratController::class, 'sppd']
 Route::get('/banprov/verifikasi/{verification}/print', [BanprovVerificationController::class, 'print'])
     ->middleware('auth:personil')
     ->name('banprov.verifikasi.print');
+Route::get('/spj/{spj}/kwitansi', [SpjController::class, 'cetak'])
+    ->middleware('auth:personil')
+    ->name('spj.kwitansi.cetak');
 Route::get('/kegiatan/disposisi/print', [KegiatanDisposisiController::class, 'bulk'])
     ->middleware('auth:personil')
     ->name('kegiatan.disposisi.bulk');
