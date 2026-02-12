@@ -12,6 +12,7 @@ use App\Http\Controllers\FilamentThemeController;
 use App\Http\Controllers\YieldPanelPreferenceController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\BanprovVerificationController;
+use App\Http\Controllers\GajExportController;
 use App\Http\Controllers\SpjController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
@@ -100,3 +101,14 @@ Route::post('/admin/theme', [FilamentThemeController::class, 'update'])
 Route::post('/admin/yield-panel', [YieldPanelPreferenceController::class, 'update'])
     ->middleware('auth:personil')
     ->name('yieldpanel.pref');
+
+Route::middleware('auth:personil')->group(function () {
+    Route::get('/admin/gajs/{gaj}/export/perbedaan', [GajExportController::class, 'perbedaan'])
+        ->name('gaj.export.perbedaan');
+    Route::get('/admin/gajs/{gaj}/export/rincian', [GajExportController::class, 'rincian'])
+        ->name('gaj.export.rincian');
+    Route::get('/admin/gajs/{gaj}/export/jml-peg', [GajExportController::class, 'jmlPeg'])
+        ->name('gaj.export.jml-peg');
+    Route::get('/admin/gajs/{gaj}/export/pemindahbukuan', [GajExportController::class, 'pemindahbukuan'])
+        ->name('gaj.export.pemindahbukuan');
+});

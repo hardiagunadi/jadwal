@@ -16,7 +16,7 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
 use YieldStudio\FilamentPanel\Plugins\YieldPanel;
@@ -120,6 +120,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label('Manajemen Kegiatan'),
                 NavigationGroup::make()->label('Administrasi Surat'),
                 NavigationGroup::make()->label('Layanan Publik'),
+                NavigationGroup::make()->label('Penggajian'),
                 NavigationGroup::make()->label('Pengaturan'),
                 NavigationGroup::make()->label('Log'),
                 NavigationGroup::make()->label('Laporan'),

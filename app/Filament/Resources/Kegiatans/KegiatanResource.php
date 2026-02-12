@@ -8,6 +8,7 @@ use App\Filament\Resources\Kegiatans\Pages\ListKegiatans;
 use App\Filament\Resources\Kegiatans\Schemas\KegiatanForm;
 use App\Filament\Resources\Kegiatans\Tables\KegiatansTable;
 use App\Models\Kegiatan;
+use App\Models\SeksiModul;
 use App\Support\RoleAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
@@ -25,7 +26,8 @@ class KegiatanResource extends Resource
     protected static ?string $pluralModelLabel = 'Agenda Kegiatan';
     protected static ?string $modelLabel = 'Kegiatan';
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Kegiatan';
-  
+    protected static string $modulKey = 'agenda';
+
     public static function form(Schema $schema): Schema
     {
         return KegiatanForm::configure($schema);
@@ -47,7 +49,36 @@ class KegiatanResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return RoleAccess::canSeeNav(auth()->user(), 'filament.admin.resources.kegiatans');
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canSeeNav($user, 'filament.admin.resources.kegiatans')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canAccessRoute($user, 'filament.admin.resources.kegiatans')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 
     public static function getPages(): array

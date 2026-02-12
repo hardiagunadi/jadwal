@@ -53,14 +53,14 @@ class ModuleSettings extends Page implements HasForms
                         ->hiddenLabel()
                         ->options($group['options'])
                         ->bulkToggleable()
-                        ->columns(2),
+                        ->columns(3),
                 ]);
         }
 
         return $schema
             ->components([
-                Section::make('Modul Aplikasi')
-                    ->description('Pilih modul yang ditampilkan di sidebar untuk semua pengguna.')
+                Section::make('Modul yang Aktif di Sistem')
+                    ->description('Centang modul yang ingin diaktifkan secara global. Modul yang tidak dicentang tidak akan bisa diakses oleh siapapun, terlepas dari role atau seksi. Gunakan halaman "Modul per Seksi" untuk mengatur modul mana yang tersedia untuk tiap unit/seksi.')
                     ->schema($components),
             ])
             ->statePath('data');

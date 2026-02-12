@@ -49,6 +49,7 @@ class RoleAccess
             'filament.admin.pages.surat-keluar-status' => 'Status Nomor Surat Keluar',
             'filament.admin.pages.role-access-settings' => 'Pengaturan Hak Akses',
             'filament.admin.pages.module-settings' => 'Pengaturan Modul',
+            'filament.admin.pages.seksi-modul-settings' => 'Pengaturan Modul per Seksi',
             'filament.admin.pages.panduan-aplikasi' => 'Panduan Aplikasi',
             'filament.admin.resources.tindak-lanjut-reminder-logs' => 'Log Pengingat TL',
             'filament.admin.resources.vehicle-tax-reminder-logs' => 'Log Pengingat Pajak',
@@ -57,6 +58,7 @@ class RoleAccess
             'filament.admin.pages.laporan-surat-keluar-bulanan' => 'Rekap Surat Keluar',
             'filament.admin.pages.laporan-pembayaran-pajak' => 'Laporan Pembayaran Pajak',
             'filament.admin.resources.personil-categories' => 'Kategori Personil',
+            'filament.admin.resources.gajs' => 'Daftar Gaji (PNS & PPPK)',
         ];
 
         if (! $applyModuleFilter) {
@@ -75,7 +77,7 @@ class RoleAccess
                 continue;
             }
 
-            if ($key === 'filament.admin.pages.module-settings' || in_array($key, $enabled, true)) {
+            if (in_array($key, ['filament.admin.pages.module-settings', 'filament.admin.pages.seksi-modul-settings'], true) || in_array($key, $enabled, true)) {
                 $filtered[$key] = $label;
             }
         }
@@ -237,7 +239,7 @@ class RoleAccess
 
     public static function isModuleEnabled(string $identifier): bool
     {
-        if ($identifier === 'filament.admin.pages.module-settings') {
+        if (in_array($identifier, ['filament.admin.pages.module-settings', 'filament.admin.pages.seksi-modul-settings'], true)) {
             return true;
         }
 
@@ -258,7 +260,8 @@ class RoleAccess
             return true;
         }
 
-        if (static::matches('filament.admin.pages.module-settings', $routeName)) {
+        if (static::matches('filament.admin.pages.module-settings', $routeName) ||
+            static::matches('filament.admin.pages.seksi-modul-settings', $routeName)) {
             return true;
         }
 

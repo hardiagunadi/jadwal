@@ -1,21 +1,20 @@
 <?php
 
-namespace App\Filament\Resources\DpaResource\Pages;
+namespace App\Filament\Resources\GajResource\Pages;
 
-use App\Filament\Resources\DpaResource;
+use App\Filament\Resources\GajResource;
 use App\Models\Personil;
-use App\Services\DpaImportService;
+use App\Services\GajImportService;
 use Filament\Actions\Action;
-
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Storage;
 
-class ListDpas extends ListRecords
+class ListGajs extends ListRecords
 {
-    protected static string $resource = DpaResource::class;
+    protected static string $resource = GajResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -23,10 +22,10 @@ class ListDpas extends ListRecords
             Action::make('import_pdf')
                 ->label('Import dari PDF')
                 ->icon('heroicon-o-arrow-up-tray')
-                ->color('gray')
+                ->color('primary')
                 ->form([
                     Select::make('seksi_akronim')
-                        ->label('Seksi / Bidang Pemilik DPA')
+                        ->label('Seksi / Bidang Pemilik Data')
                         ->options(function () {
                             return Personil::query()
                                 ->whereNotNull('jabatan_akronim')
@@ -42,7 +41,6 @@ class ListDpas extends ListRecords
                             if ($user && ! $user->isAdmin()) {
                                 return strtolower(trim((string) ($user->jabatan_akronim ?? ''))) ?: null;
                             }
-
                             return null;
                         })
                         ->disabled(fn () => ! auth()->user()?->isAdmin())
@@ -51,58 +49,42 @@ class ListDpas extends ListRecords
                         ->nullable()
                         ->helperText(function () {
                             if (auth()->user()?->isAdmin()) {
-                                return 'Pilih seksi pemilik DPA ini agar pengguna seksi tersebut dapat memilihnya saat membuat SPJ.';
+                                return 'Pilih seksi pemilik data gaji ini.';
                             }
-
                             return 'Seksi otomatis diisi sesuai akun Anda.';
                         }),
 
                     FileUpload::make('pdf_files')
-                        ->label('File PDF DPA (dari SIPD)')
+                        ->label('File PDF Daftar Gaji')
                         ->acceptedFileTypes(['application/pdf'])
                         ->required()
                         ->multiple()
                         ->disk('local')
-                        ->directory('dpa-imports')
-                        ->helperText('Upload satu atau beberapa file PDF DPA yang diunduh dari SIPD Kemendagri.'),
+                        ->directory('gaji-imports')
+                        ->helperText('Upload file PDF Daftar Gaji Induk PNS atau PPPK dari SIPD.'),
                 ])
                 ->action(function (array $data): void {
-                    /** @var DpaImportService $service */
-                    $service = app(DpaImportService::class);
-
+                    /** @var GajImportService $service */
+                    $service  = app(GajImportService::class);
                     $berhasil = 0;
-                    $gagal = 0;
+                    $gagal    = 0;
                     $messages = [];
 
                     foreach ($data['pdf_files'] as $file) {
                         $path = Storage::disk('local')->path($file);
 
                         try {
-                            $result = $service->parseAndImport($path);
+                            $result = $service->parseAndImport($path, $data['seksi_akronim'] ?? null);
 
-                            $dpa = $result['dpa'];
+                            $gaj    = $result['gaj'];
+                            $jumlah = $result['jumlah'];
+                            $isNew  = $result['is_new'];
 
-                            if (! empty($data['seksi_akronim'])) {
-                                $dpa->update(['seksi_akronim' => strtolower(trim($data['seksi_akronim']))]);
-                            }
-                            $isNew = $result['is_new'];
-                            $subBaru = $result['sub_baru'];
-                            $subUpdate = $result['sub_update'];
-                            $totalSub = $dpa->subKegiatans()->count();
-                            $totalRincian = $dpa->rincianBelanjas()->count();
-
-                            if ($isNew) {
-                                $messages[] = "✓ {$dpa->nomor_dpa} — baru ({$subBaru} sub | {$totalRincian} rincian)";
-                            } elseif ($subBaru > 0) {
-                                $messages[] = "✓ {$dpa->nomor_dpa} — +{$subBaru} sub baru"
-                                    . ($subUpdate > 0 ? ", {$subUpdate} diperbarui" : '');
-                            } else {
-                                $messages[] = "↺ {$dpa->nomor_dpa} — sudah ada ({$subUpdate} sub diperbarui)";
-                            }
-
+                            $label = strtoupper($gaj->jenis) . ' — ' . $gaj->periode;
+                            $messages[] = ($isNew ? '✓ Baru: ' : '↺ Diperbarui: ') . $label . " ({$jumlah} pegawai)";
                             $berhasil++;
                         } catch (\Throwable $e) {
-                            $messages[] = "✗ " . basename($file) . ": " . $e->getMessage();
+                            $messages[] = '✗ ' . basename($file) . ': ' . $e->getMessage();
                             $gagal++;
                         } finally {
                             Storage::disk('local')->delete($file);
@@ -120,8 +102,8 @@ class ListDpas extends ListRecords
                         ->color($gagal === 0 ? 'success' : ($berhasil === 0 ? 'danger' : 'warning'))
                         ->send();
                 })
-                ->modalHeading('Import DPA dari PDF SIPD')
-                ->modalDescription('Upload satu atau beberapa file PDF DPA dari SIPD Kemendagri. Beberapa sub kegiatan dalam satu unit memiliki nomor DPA yang sama — sistem akan otomatis menggabungkannya ke dalam satu DPA dan menambahkan sub kegiatan baru.')
+                ->modalHeading('Import Daftar Gaji dari PDF SIPD')
+                ->modalDescription('Upload file PDF Daftar Pembayaran Gaji Induk PNS atau PPPK dari SIPD. Jika data bulan yang sama sudah ada, akan digantikan.')
                 ->modalSubmitActionLabel('Import'),
         ];
     }

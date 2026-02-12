@@ -9,6 +9,7 @@ use App\Models\Dpa;
 use App\Models\DpaRincianBelanja;
 use App\Models\DpaSubKegiatan;
 use App\Models\Personil;
+use App\Models\SeksiModul;
 use App\Models\Spj;
 use App\Models\SuratKeluar;
 use App\Services\TaxCalculationService;
@@ -43,8 +44,22 @@ class SpjResource extends Resource
     protected static ?string $pluralModelLabel = 'SPJ Kwitansi Dinas';
     protected static ?string $modelLabel = 'SPJ';
     protected static ?string $slug = 'spj';
-    protected static string|UnitEnum|null $navigationGroup = 'Seksi Ekbang';
     protected static ?int $navigationSort = 25;
+
+    /** Key modul — harus cocok dengan SeksiModul::availableModuls(). */
+    protected static string $modulKey = 'spj';
+
+    public static function getNavigationGroup(): ?string
+    {
+        $user = auth()->user();
+        if (! $user || $user->isAdmin()) {
+            return 'Admin';
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::labelSeksi($akronim) ?? strtoupper($akronim);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -77,14 +92,26 @@ class SpjResource extends Resource
                     Select::make('dpa_rincian_belanja_id')
                         ->label('Rincian DPA (Sub Kegiatan / Kode Rekening)')
                         ->options(function () {
+                            $user = auth()->user();
+                            $isAdmin = $user?->isAdmin();
+                            $userAkronim = strtolower(trim((string) ($user?->jabatan_akronim ?? '')));
+
                             $allKodes = DpaRincianBelanja::query()
                                 ->pluck('kode_rekening')
                                 ->toArray();
 
-                            $leafItems = DpaRincianBelanja::query()
+                            $query = DpaRincianBelanja::query()
                                 ->with('subKegiatan.dpa')
-                                ->orderBy('kode_rekening')
-                                ->get()
+                                ->orderBy('kode_rekening');
+
+                            // Non-admin: filter hanya DPA milik seksi sendiri
+                            if (! $isAdmin && $userAkronim !== '') {
+                                $query->whereHas('subKegiatan.dpa', function ($q) use ($userAkronim) {
+                                    $q->whereRaw('LOWER(TRIM(seksi_akronim)) = ?', [$userAkronim]);
+                                });
+                            }
+
+                            $leafItems = $query->get()
                                 ->filter(function (DpaRincianBelanja $r) use ($allKodes) {
                                     $prefix = $r->kode_rekening . '.';
                                     foreach ($allKodes as $other) {
@@ -100,8 +127,12 @@ class SpjResource extends Resource
                                 $sub = $r->subKegiatan;
                                 $dpa = $sub?->dpa;
 
+                                $akronimBadge = ($dpa && $dpa->seksi_akronim)
+                                    ? '[' . strtoupper($dpa->seksi_akronim) . '] '
+                                    : '';
+
                                 $groupKey = $sub
-                                    ? '[' . $sub->kode . '] ' . $sub->nama . ($dpa ? ' (' . $dpa->tahun . ')' : '')
+                                    ? $akronimBadge . '[' . $sub->kode . '] ' . $sub->nama . ($dpa ? ' (' . $dpa->tahun . ')' : '')
                                     : 'Sub Kegiatan Tidak Diketahui';
 
                                 $sisa = $r->sisa_anggaran;
@@ -203,7 +234,7 @@ class SpjResource extends Resource
                         })
                         ->helperText('Masukkan angka tanpa titik/koma.')
                         ->rules([
-                            fn (Get $get) => function (string $attribute, $value, \Closure $fail) use ($get) {
+                            fn (Get $get, ?Spj $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
                                 if (! $value || ! $get('dpa_rincian_belanja_id')) {
                                     return;
                                 }
@@ -211,7 +242,16 @@ class SpjResource extends Resource
                                 if (! $rincian) {
                                     return;
                                 }
-                                $sisa = $rincian->sisa_anggaran;
+
+                                // Pagu tidak pernah berubah; sisa = pagu - total SPJ.
+                                // Saat edit, kembalikan jumlah lama ke sisa agar pagu tidak
+                                // dihitung dua kali (jika kode rekening tidak diganti).
+                                $oldJumlah = 0;
+                                if ($record && (int) $record->dpa_rincian_belanja_id === (int) $get('dpa_rincian_belanja_id')) {
+                                    $oldJumlah = (int) $record->jumlah;
+                                }
+
+                                $sisa = $rincian->sisa_anggaran + $oldJumlah;
                                 if ((int) $value > $sisa) {
                                     $sisaFormat = 'Rp ' . number_format($sisa, 0, ',', '.');
                                     $fail("Jumlah melebihi sisa anggaran rekening ini ({$sisaFormat}).");
@@ -429,7 +469,7 @@ class SpjResource extends Resource
 
         $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
 
-        return $akronim === 'ekbang';
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 
     public static function canAccess(): bool
@@ -446,6 +486,6 @@ class SpjResource extends Resource
 
         $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
 
-        return $akronim === 'ekbang';
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 }

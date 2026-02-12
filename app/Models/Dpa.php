@@ -18,6 +18,7 @@ class Dpa extends Model
         'organisasi',
         'pagu_anggaran',
         'catatan',
+        'seksi_akronim',
     ];
 
     protected $casts = [

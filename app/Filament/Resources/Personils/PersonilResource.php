@@ -9,6 +9,7 @@ use App\Filament\Resources\Personils\Schemas\PersonilForm;
 use App\Filament\Resources\Personils\Tables\PersonilsTable;
 use App\Imports\PersonilsImport;
 use App\Models\Personil;
+use App\Models\SeksiModul;
 use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\Action;                 // v4: Action dari sini
@@ -34,6 +35,7 @@ class PersonilResource extends Resource
     protected static ?string $modelLabel = 'Personil';
 
     protected static string|UnitEnum|null $navigationGroup = 'Pengaturan';
+    protected static string $modulKey = 'personil';
 
     public static function form(Schema $schema): Schema
     {
@@ -99,7 +101,36 @@ class PersonilResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return RoleAccess::canSeeNav(auth()->user(), 'filament.admin.resources.personils');
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canSeeNav($user, 'filament.admin.resources.personils')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canAccessRoute($user, 'filament.admin.resources.personils')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 
     public static function getPages(): array

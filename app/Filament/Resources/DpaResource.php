@@ -2,17 +2,21 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\DpaResource\Pages\CreateDpa;
 use App\Filament\Resources\DpaResource\Pages\EditDpa;
 use App\Filament\Resources\DpaResource\Pages\ListDpas;
 use App\Filament\Resources\DpaResource\RelationManagers\RincianBelanjaRelationManager;
 use App\Filament\Resources\DpaResource\RelationManagers\SubKegiatanRelationManager;
 use App\Models\Dpa;
+use App\Models\Personil;
+use App\Models\SeksiModul;
+use App\Models\Spj;
 use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -32,8 +36,22 @@ class DpaResource extends Resource
     protected static ?string $pluralModelLabel = 'DPA';
     protected static ?string $modelLabel = 'DPA';
     protected static ?string $slug = 'dpa';
-    protected static string|UnitEnum|null $navigationGroup = 'Seksi Ekbang';
     protected static ?int $navigationSort = 20;
+
+    /** Key modul — harus cocok dengan SeksiModul::availableModuls(). */
+    protected static string $modulKey = 'dpa';
+
+    public static function getNavigationGroup(): ?string
+    {
+        $user = auth()->user();
+        if (! $user || $user->isAdmin()) {
+            return 'Admin';
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::labelSeksi($akronim) ?? strtoupper($akronim);
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -63,6 +81,22 @@ class DpaResource extends Resource
                         ->numeric()
                         ->default(0)
                         ->helperText('Total pagu seluruh sub kegiatan dalam DPA ini.'),
+
+                    Select::make('seksi_akronim')
+                        ->label('Seksi / Bidang')
+                        ->options(function () {
+                            return Personil::query()
+                                ->whereNotNull('jabatan_akronim')
+                                ->where('jabatan_akronim', '!=', '')
+                                ->distinct()
+                                ->orderBy('jabatan_akronim')
+                                ->pluck('jabatan_akronim', 'jabatan_akronim')
+                                ->mapWithKeys(fn ($v) => [strtolower(trim($v)) => strtoupper(trim($v))])
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->nullable()
+                        ->helperText('Pilih seksi pemilik DPA. Digunakan untuk memfilter pilihan di form SPJ.'),
                 ])
                 ->columns(3),
 
@@ -114,6 +148,12 @@ class DpaResource extends Resource
                     ->searchable()
                     ->copyable(),
 
+                Tables\Columns\TextColumn::make('seksi_akronim')
+                    ->label('Seksi')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state ? strtoupper($state) : '—')
+                    ->color(fn ($state) => $state ? 'info' : 'gray'),
+
                 Tables\Columns\TextColumn::make('tahun')
                     ->label('Tahun')
                     ->sortable(),
@@ -147,10 +187,50 @@ class DpaResource extends Resource
             ->actions([
                 EditAction::make(),
                 DeleteAction::make()
-                    ->hidden(fn ($record) => blank($record) ? false : (method_exists($record, 'trashed') && $record->trashed())),
+                    ->hidden(fn ($record) => blank($record) ? false : (method_exists($record, 'trashed') && $record->trashed()))
+                    ->before(function (DeleteAction $action, Dpa $record): void {
+                        $spjCount = Spj::query()
+                            ->whereHas('dpaRincianBelanja.subKegiatan', fn ($q) => $q->where('dpa_id', $record->id))
+                            ->count();
+
+                        if ($spjCount > 0) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Tidak dapat menghapus DPA')
+                                ->body("DPA ini masih memiliki {$spjCount} data SPJ Kwitansi yang terhubung. Hapus SPJ terkait terlebih dahulu.")
+                                ->persistent()
+                                ->send();
+
+                            $action->halt();
+                        }
+                    }),
             ])
             ->bulkActions([
-                DeleteBulkAction::make(),
+                DeleteBulkAction::make()
+                    ->before(function (DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records): void {
+                        $dpaIds = $records->pluck('id')->toArray();
+
+                        $spjCount = Spj::query()
+                            ->whereHas('dpaRincianBelanja.subKegiatan', fn ($q) => $q->whereIn('dpa_id', $dpaIds))
+                            ->count();
+
+                        if ($spjCount > 0) {
+                            $affected = $records->filter(function (Dpa $dpa) {
+                                return Spj::query()
+                                    ->whereHas('dpaRincianBelanja.subKegiatan', fn ($q) => $q->where('dpa_id', $dpa->id))
+                                    ->exists();
+                            })->pluck('nomor_dpa')->implode(', ');
+
+                            Notification::make()
+                                ->danger()
+                                ->title('Tidak dapat menghapus beberapa DPA')
+                                ->body("Terdapat {$spjCount} SPJ yang terhubung dengan DPA berikut: {$affected}. Hapus SPJ terkait terlebih dahulu.")
+                                ->persistent()
+                                ->send();
+
+                            $action->halt();
+                        }
+                    }),
             ])
             ->emptyStateHeading('Belum ada data DPA')
             ->emptyStateDescription('Tambahkan DPA menggunakan tombol di atas atau import dari PDF SIPD.');
@@ -168,7 +248,6 @@ class DpaResource extends Resource
     {
         return [
             'index' => ListDpas::route('/'),
-            'create' => CreateDpa::route('/create'),
             'edit' => EditDpa::route('/{record}/edit'),
         ];
     }
@@ -187,7 +266,7 @@ class DpaResource extends Resource
 
         $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
 
-        return $akronim === 'ekbang';
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 
     public static function canAccess(): bool
@@ -204,6 +283,6 @@ class DpaResource extends Resource
 
         $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
 
-        return $akronim === 'ekbang';
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 }

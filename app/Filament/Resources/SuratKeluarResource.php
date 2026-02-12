@@ -8,6 +8,7 @@ use App\Filament\Resources\SuratKeluarResource\Pages\ListSuratKeluars;
 use App\Models\KodeSurat;
 use App\Models\Personil;
 use App\Models\SuratKeluar;
+use App\Models\SeksiModul;
 use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Forms\Components\DatePicker;
@@ -36,6 +37,7 @@ class SuratKeluarResource extends Resource
     protected static ?string $slug = 'surat-keluar';
     protected static string|UnitEnum|null $navigationGroup = 'Administrasi Surat';
     protected static ?int $navigationSort = 15;
+    protected static string $modulKey = 'surat-keluar';
 
     public static function form(Schema $schema): Schema
     {
@@ -320,7 +322,36 @@ class SuratKeluarResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return RoleAccess::canSeeNav(auth()->user(), 'filament.admin.resources.surat-keluar');
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canSeeNav($user, 'filament.admin.resources.surat-keluar')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
+    }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user || ! RoleAccess::canAccessRoute($user, 'filament.admin.resources.surat-keluar')) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
+
+        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
     }
 
     public static function getEloquentQuery(): Builder

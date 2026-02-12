@@ -9,6 +9,8 @@ use BackedEnum;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Contracts\HasForms;
@@ -51,15 +53,22 @@ class RoleAccessSettings extends Page implements HasForms
 
         return $schema
             ->components([
-                Section::make('Admin')
-                    ->description('Hak akses admin (biasanya semua halaman).')
-                    ->schema($this->buildRoleGroupComponents(UserRole::Admin, $groups)),
-                Section::make('Arsiparis')
-                    ->description('Atur halaman yang dapat diakses role arsiparis.')
-                    ->schema($this->buildRoleGroupComponents(UserRole::Arsiparis, $groups)),
-                Section::make('Pengguna')
-                    ->description('Atur halaman yang dapat diakses role pengguna.')
-                    ->schema($this->buildRoleGroupComponents(UserRole::Pengguna, $groups)),
+                Section::make('Pengaturan Hak Akses per Role')
+                    ->description('Pilih halaman yang dapat diakses oleh setiap role. Centang item untuk mengizinkan akses.')
+                    ->schema([
+                        Tabs::make('roles')
+                            ->tabs([
+                                Tab::make('Admin')
+                                    ->icon('heroicon-o-shield-check')
+                                    ->schema($this->buildRoleGroupComponents(UserRole::Admin, $groups)),
+                                Tab::make('Arsiparis')
+                                    ->icon('heroicon-o-document-text')
+                                    ->schema($this->buildRoleGroupComponents(UserRole::Arsiparis, $groups)),
+                                Tab::make('Pengguna')
+                                    ->icon('heroicon-o-user')
+                                    ->schema($this->buildRoleGroupComponents(UserRole::Pengguna, $groups)),
+                            ]),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -138,7 +147,7 @@ class RoleAccessSettings extends Page implements HasForms
                         ->hiddenLabel()
                         ->options($group['options'])
                         ->bulkToggleable()
-                        ->columns(2),
+                        ->columns(3),
                 ]);
         }
 
