@@ -228,30 +228,27 @@
             <td colspan="2" class="bt bb br c xs b"    style="padding:1px 2px;">Pajak</td>
             <td colspan="3" class="bt bb br c xs b"    style="padding:1px 2px;">Jumlah bersih</td>
         </tr>
-        {{-- Row 13 : kanan = (Rp.) --}}
+        {{-- Row 13 : kanan = nilai (naik dari ROW 14) --}}
         <tr>
-            <td colspan="3" class="bl bb br c xs" style="padding:1px 2px;">(Rp.)</td>
-            <td colspan="2" class="bb br c xs"   style="padding:1px 2px;">(Rp.)</td>
-            <td colspan="3" class="bb br c xs"   style="padding:1px 2px;">(Rp.)</td>
+            <td colspan="3" class="bl bb br c xs" style="padding:1px 2px;">{{ $rp($jumlah) }}</td>
+            <td colspan="2" class="bb br c xs"   style="padding:1px 2px;">{{ $rp($totalPajak) }}</td>
+            <td colspan="3" class="bb br c xs"   style="padding:1px 2px;">{{ $rp($bersih) }}</td>
         </tr>
 
-        {{-- ══ ROW 14 : Yaitu untuk pembayaran + nilai pajak kotor ══ --}}
-        {{-- Kanan: nilai bb (menutup kotak tax) --}}
+        {{-- ══ ROW 14 : Yaitu untuk pembayaran + Uraian Pajak (naik dari ROW 15) ══ --}}
         <tr>
             <td colspan="5" class="bl" style="padding:1px 3px;">Yaitu untuk pembayaran</td>
             <td colspan="1" class="c">:</td>
             <td colspan="6" class="br" style="padding:1px 3px;">{{ $spj->uraian ?: '' }}</td>
-            <td colspan="3" class="bl bb br c xs" style="padding:1px 2px;">{{ $rp($jumlah) }}</td>
-            <td colspan="2" class="bb br c xs"    style="padding:1px 2px;">{{ $rp($totalPajak) }}</td>
-            <td colspan="3" class="bb br c xs"    style="padding:1px 2px;">{{ $rp($bersih) }}</td>
+            <td colspan="8" class="br b" style="padding:1px 3px;">Uraian Pajak :</td>
         </tr>
 
-        {{-- ══ ROW 15 : Sub Kegiatan + Uraian Pajak ══ --}}
+        {{-- ══ ROW 15 : Sub Kegiatan + kanan kosong ══ --}}
         <tr>
             <td colspan="5" class="bl" style="padding:1px 3px;">Berguna buat Sub Kegiatan</td>
             <td colspan="1" class="c">:</td>
             <td colspan="6" class="br sm" style="padding:1px 3px;">{{ $subKegText }}</td>
-            <td colspan="8" class="br b" style="padding:1px 3px;">Uraian Pajak :</td>
+            <td colspan="8" class="br"></td>
         </tr>
 
         {{-- ══ ROW 16 : Sub Kegiatan lanjut + PPn ══ --}}
@@ -274,12 +271,12 @@
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph21) }}</td>
         </tr>
 
-        {{-- ══ ROW 18 : Watumalang / tanggal + PPh 22 ══ --}}
+        {{-- ══ ROW 18 : Tanggal + PPh 22 ══ --}}
         <tr>
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br c sm" style="padding:1px 3px;">
-                Watumalang,{{ $tanggalRaw ? ' ' . $tanggalRaw : '' }}&nbsp;&nbsp; {{ $tahun }}
+                Wonosobo,{{ $tanggalRaw ? ' ' . $tanggalRaw : '' }}
             </td>
             <td colspan="4" style="padding:1px 3px;">3.&nbsp;PPh 22</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
@@ -293,17 +290,17 @@
             <td colspan="6" class="br c sm" style="padding:1px 3px;">Yang berhak menerima</td>
             <td colspan="4" style="padding:1px 3px;">4.&nbsp;PPh 23</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
-            <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph23) }}</td>
+            <td colspan="3" class="br bb r" style="padding:1px 3px;">{{ $rp($pph23) }}</td>
         </tr>
 
         {{-- ══ ROW 20 : Ruang TTD + Jumlah pajak ══ --}}
-        <tr class="h-ttd">
+        <tr style="height:11mm;">
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br"></td>
-            <td colspan="4" class="c b" style="padding:1px 3px; vertical-align:bottom;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jumlah</td>
-            <td colspan="1" style="padding:1px 3px; vertical-align:bottom;">Rp.</td>
-            <td colspan="3" class="br bb r" style="padding:1px 3px; vertical-align:bottom;">{{ $rp($totalPajak) }}</td>
+            <td colspan="4" class="c b" style="padding:1px 3px; vertical-align:top;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Jumlah</td>
+            <td colspan="1" style="padding:1px 3px; vertical-align:top;">Rp.</td>
+            <td colspan="3" class="br r" style="padding:1px 3px; vertical-align:top;">{{ $rp($totalPajak) }}</td>
         </tr>
 
         {{-- ══ ROW 21 : Nama penerima + Pengeluaran/pembelian ══ --}}
@@ -317,7 +314,7 @@
         </tr>
 
         {{-- ══ ROW 22 : NIP penerima + bb penutup body ══ --}}
-        <tr>
+        <tr style="height:6mm;">
             <td colspan="5" class="bl bb"></td>
             <td colspan="1" class="bb"></td>
             <td colspan="6" class="br bb c sm" style="padding:1px 3px;"></td>
