@@ -30,6 +30,7 @@ class Personil extends Authenticatable implements FilamentUser, HasAvatar, HasNa
         'photo_url',
         'jabatan',
         'jabatan_akronim',
+        'jabatan_lainnya',
         'pangkat',
         'golongan',
         'kategori',
