@@ -140,19 +140,19 @@ class VerifikasiBanprov extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                Tables\Actions\Action::make('print_verifikasi')
+                Action::make('print_verifikasi')
                     ->label('Cetak Lembar Verifikasi')
                     ->icon('heroicon-o-printer')
                     ->url(fn (BanprovVerification $record) => route('banprov.verifikasi.print', $record))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('toggle_lpj')
+                Action::make('toggle_lpj')
                     ->label(fn (BanprovVerification $record) => $record->status_lpj ? 'Belum LPJ' : 'Sudah LPJ')
                     ->icon(fn (BanprovVerification $record) => $record->status_lpj ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
                     ->color(fn (BanprovVerification $record) => $record->status_lpj ? 'gray' : 'success')
                     ->action(function (BanprovVerification $record): void {
                         $record->update(['status_lpj' => ! $record->status_lpj]);
                     }),
-                Tables\Actions\Action::make('toggle_monev')
+                Action::make('toggle_monev')
                     ->label(fn (BanprovVerification $record) => $record->status_monev ? 'Belum Monev' : 'Sudah Monev')
                     ->icon(fn (BanprovVerification $record) => $record->status_monev ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
                     ->color(fn (BanprovVerification $record) => $record->status_monev ? 'gray' : 'success')
