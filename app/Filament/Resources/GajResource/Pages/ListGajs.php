@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\GajResource\Pages;
 
+use App\Filament\Resources\GajKorpriResource;
 use App\Filament\Resources\GajResource;
 use App\Models\Personil;
 use App\Services\GajImportService;
@@ -19,6 +20,13 @@ class ListGajs extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('dkk_korpri')
+                ->label('DKK Korpri')
+                ->icon('heroicon-o-building-office-2')
+                ->color('gray')
+                ->url(fn () => GajKorpriResource::getUrl('index'))
+                ->visible(fn () => GajKorpriResource::canAccess()),
+
             Action::make('import_pdf')
                 ->label('Import dari PDF')
                 ->icon('heroicon-o-arrow-up-tray')

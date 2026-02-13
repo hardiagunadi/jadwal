@@ -2,17 +2,22 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\GajKorpriResource\Pages\ListGajKorpris;
 use App\Filament\Resources\GajKorpriResource\Pages\CreateGajKorpri;
-use App\Filament\Resources\GajKorpriResource\Pages\EditGajKorpri;
+use App\Filament\Resources\GajKorpriResource\Pages\ListGajKorpris;
 use App\Models\GajKorpri;
+use App\Models\GajPegawai;
 use App\Models\SeksiModul;
 use App\Support\RoleAccess;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -26,23 +31,62 @@ class GajKorpriResource extends Resource
     protected static ?string $navigationLabel = 'DKK Korpri';
     protected static ?string $pluralModelLabel = 'DKK Korpri';
     protected static ?string $modelLabel = 'DKK Korpri';
-    protected static ?string $slug = 'gaj-korpris';
+    protected static ?string $slug = 'gajs/korpri';
     protected static string|UnitEnum|null $navigationGroup = 'Penggajian';
     protected static ?int $navigationSort = 20;
     protected static string $modulKey = 'gaji';
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            TextInput::make('nip')
-                ->label('NIP')
-                ->required()
-                ->maxLength(20)
-                ->unique(ignoreRecord: true),
+        // Semua opsi PNS (NIP → Nama)
+        $allPnsOptions = fn () => GajPegawai::query()
+            ->whereHas('gaj', fn ($q) => $q->where('jenis', 'pns'))
+            ->whereNotNull('nip')
+            ->where('nip', '!=', '')
+            ->select('nip', 'nama')
+            ->orderBy('nama')
+            ->get()
+            ->unique('nip')
+            ->pluck('nama', 'nip')
+            ->toArray();
 
-            TextInput::make('nama')
-                ->label('Nama Pegawai')
-                ->maxLength(100),
+        // Opsi untuk multi-select create: kecualikan NIP yang sudah terdaftar
+        $createOptions = fn () => GajPegawai::query()
+            ->whereHas('gaj', fn ($q) => $q->where('jenis', 'pns'))
+            ->whereNotNull('nip')
+            ->where('nip', '!=', '')
+            ->whereNotIn('nip', GajKorpri::pluck('nip'))
+            ->select('nip', 'nama')
+            ->orderBy('nama')
+            ->get()
+            ->unique('nip')
+            ->pluck('nama', 'nip')
+            ->toArray();
+
+        return $schema->components([
+            // Multi-select: hanya pada create, tidak disimpan langsung ke model
+            Select::make('nips')
+                ->label('Nama Pegawai (PNS)')
+                ->required(fn (string $operation) => $operation === 'create')
+                ->multiple()
+                ->searchable()
+                ->options($createOptions)
+                ->dehydrated(false)   // ditangani manual di handleRecordCreation()
+                ->hiddenOn('edit'),
+
+            // Single select: hanya pada edit, disimpan ke kolom nip
+            Select::make('nip')
+                ->label('Nama Pegawai (PNS)')
+                ->required(fn (string $operation) => $operation === 'edit')
+                ->searchable()
+                ->options($allPnsOptions)
+                ->live()
+                ->afterStateUpdated(function ($state, Set $set) {
+                    $set('nama', $state ? (GajPegawai::where('nip', $state)->value('nama') ?? '') : '');
+                })
+                ->hiddenOn('create'),
+
+            Hidden::make('nama'),
 
             TextInput::make('jumlah')
                 ->label('Jumlah DKK Korpri (Rp)')
@@ -73,12 +117,19 @@ class GajKorpriResource extends Resource
                     ->alignRight(),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->form([
+                        TextInput::make('jumlah')
+                            ->label('Jumlah DKK Korpri (Rp)')
+                            ->required()
+                            ->numeric()
+                            ->minValue(0),
+                    ]),
                 DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -88,32 +139,20 @@ class GajKorpriResource extends Resource
         return [
             'index'  => ListGajKorpris::route('/'),
             'create' => CreateGajKorpri::route('/create'),
-            'edit'   => EditGajKorpri::route('/{record}/edit'),
         ];
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        $user = auth()->user();
-
-        if (! $user || ! RoleAccess::canSeeNav($user, 'filament.admin.resources.gaj-korpris')) {
-            return false;
-        }
-
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        $akronim = strtolower(trim((string) ($user->jabatan_akronim ?? '')));
-
-        return SeksiModul::aktifUntuk($akronim, static::$modulKey);
+        return false; // Diakses via tombol di halaman Daftar Gaji
     }
 
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        if (! $user || ! RoleAccess::canAccessRoute($user, 'filament.admin.resources.gaj-korpris')) {
+        // Gunakan route key 'gajs' (sudah terdaftar di RoleAccess & ModuleSetting)
+        if (! $user || ! RoleAccess::canAccessRoute($user, 'filament.admin.resources.gajs')) {
             return false;
         }
 
