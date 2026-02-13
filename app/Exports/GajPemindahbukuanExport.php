@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Gaj;
+use App\Models\GajKorpri;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -449,17 +450,21 @@ class GajPemindahbukuanExport
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
-     * Hitung per-pegawai: bruto = jumlah_bersih (dari SIPD), baznas = 2.5%, korpri = 0
+     * Hitung per-pegawai: bruto = jumlah_bersih (dari SIPD), baznas = 2.5%,
+     * korpri = lookup dari tabel gaj_korpris berdasarkan NIP (persistent, tidak perlu entri ulang tiap bulan)
      */
     private function buildRows(Gaj $gaj): array
     {
+        // Ambil semua KORPRI sekaligus untuk efisiensi
+        $korpriMap = GajKorpri::pluck('jumlah', 'nip');
+
         return $gaj->pegawais()
             ->orderBy('no_urut')
             ->get()
-            ->map(function ($p) {
+            ->map(function ($p) use ($korpriMap) {
                 $bruto  = (int) $p->jumlah_bersih;
                 $baznas = (int) round($bruto * 0.025);
-                $korpri = 0;
+                $korpri = (int) ($korpriMap[$p->nip] ?? 0);
                 $bersih = $bruto - $baznas - $korpri;
 
                 return [
