@@ -7,12 +7,18 @@ use App\Services\GajLaporanService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 
 class GajPerbedaanExport
 {
     protected GajLaporanService $svc;
+
+    // ── Pejabat TTD ──────────────────────────────────────────────────────────
+    private const NAMA_BENDAHARA = 'DEWI ASMARANI H., A.Md';
+    private const NIP_BENDAHARA  = 'NIP. 19930702 202012 2 010';
+    private const NAMA_PENYIAP   = 'SOLEH';
+    private const NIP_PENYIAP    = 'NIP. 19710815 201212 1 001';
 
     // PNS golongan rows
     protected array $PNS_ROWS = [
@@ -102,53 +108,133 @@ class GajPerbedaanExport
 
     private function buildSheet($sheet, Gaj $gaj, array $dataLalu, array $dataNow, array $rows, bool $isPns): void
     {
+        // ── Page setup (Legal, Landscape, Fit to 1 page) ───────────────────
+        $pageSetup = $sheet->getPageSetup();
+        $pageSetup->setPaperSize(PageSetup::PAPERSIZE_LEGAL);
+        $pageSetup->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+        $pageSetup->setFitToWidth(1);
+        $pageSetup->setFitToHeight(1);
+
+        $pageMargins = $sheet->getPageMargins();
+        $pageMargins->setTop(0.59);
+        $pageMargins->setBottom(0.6);
+        $pageMargins->setLeft(1.28);
+        $pageMargins->setRight(0.52);
+
+        // ── Column widths (A-S matching template) ──────────────────────────
+        $colWidths = [
+            'A' => 3.18,  'B' => 15.27, 'C' => 14.36, 'D' => 6,     'E' => 6.36,
+            'F' => 6.91,  'G' => 6.09,  'H' => 13.54, 'I' => 6,     'J' => 6.36,
+            'K' => 7,     'L' => 6.09,  'M' => 14.18, 'N' => 11,    'O' => 10,
+            'P' => 11,    'Q' => 10.54, 'R' => 11,    'S' => 10.54,
+        ];
+        foreach ($colWidths as $col => $w) {
+            $sheet->getColumnDimension($col)->setWidth($w);
+        }
+
+        // Default font
+        $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
+
         $bulanLaluLabel = $gaj->bulan == 1
             ? Gaj::$bulanLabels[12] . ' ' . ($gaj->tahun - 1)
             : (Gaj::$bulanLabels[$gaj->bulan - 1] ?? '-') . ' ' . $gaj->tahun;
 
-        // ── Header ───────────────────────────────────────────────────────────
-        $sheet->mergeCells('A1:W1');
+        // ── R1: Title ──────────────────────────────────────────────────────
+        $sheet->mergeCells('A1:S1');
         $sheet->setCellValue('A1', 'DAFTAR PERBEDAAN JUMLAH PEGAWAI DAN PEMBAYARAN');
-        $this->styleTitle($sheet, 'A1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('A3:E3');
+        // ── R3-R5: Document info ───────────────────────────────────────────
         $sheet->setCellValue('A3', 'GAJI BULAN');
-        $sheet->mergeCells('F3:W3');
         $sheet->setCellValue('F3', ': ' . strtoupper($gaj->periode));
 
-        $sheet->mergeCells('A4:E4');
         $sheet->setCellValue('A4', 'BADAN / DINAS KANTOR');
-        $sheet->mergeCells('F4:W4');
-        $sheet->setCellValue('F4', ': ' . $gaj->nama_satker);
+        $sheet->setCellValue('F4', ': KECAMATAN WATUMALANG');
 
-        // ── Sub-header ────────────────────────────────────────────────────────
-        $r = 6;
-        // Row 6: group headers
-        $sheet->mergeCells("A{$r}:C{$r}");
-        $sheet->mergeCells("D{$r}:H{$r}");
-        $sheet->setCellValue("D{$r}", 'I. Bulan : ' . $bulanLaluLabel);
-        $sheet->mergeCells("I{$r}:M{$r}");
-        $sheet->setCellValue("I{$r}", 'II. Bulan : ' . $gaj->periode);
-        $sheet->mergeCells("N{$r}:W{$r}");
-        $sheet->setCellValue("N{$r}", 'III. PERBEDAAN');
+        $sheet->setCellValue('A5', 'KODE REKENING');
+        $sheet->setCellValue('F5', ': 2.01.13.1.1.03.2');
 
-        // Row 7: column headers
-        $r = 7;
-        $headers = ['No', 'Golongan/', '', 'PEG.', 'ISTRI', 'ANAK', 'JIWA', 'JML. KOTOR',
-                    'PEG.', 'ISTRI', 'ANAK', 'JIWA', 'JML. KOTOR',
-                    'PEG\nTAMBAH', 'PEG\nKURANG', 'ISTRI\nTAMBAH', 'ISTRI\nKURANG',
-                    'ANAK\nTAMBAH', 'ANAK\nKURANG', 'JIWA\nTAMBAH', 'JIWA\nKURANG',
-                    'JML.KOTOR\nTAMBAH', 'JML.KOTOR\nKURANG'];
-        foreach ($headers as $ci => $h) {
-            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($ci + 1);
-            $sheet->setCellValue("{$col}{$r}", $h);
-            $sheet->getStyle("{$col}{$r}")->getAlignment()->setWrapText(true)->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // ── R6: Group headers ──────────────────────────────────────────────
+        $sheet->setCellValue('B6', 'Golongan/');
+        $sheet->mergeCells('D6:H6');
+        $sheet->setCellValue('D6', 'I. Bulan : ' . $bulanLaluLabel);
+        $sheet->getStyle('D6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('I6:M6');
+        $sheet->setCellValue('I6', 'II. Bulan : ' . $gaj->periode);
+        $sheet->getStyle('I6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('N6:S6');
+        $sheet->setCellValue('N6', 'III. PERBEDAAN');
+        $sheet->getStyle('N6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ── R7: Column headers ─────────────────────────────────────────────
+        $sheet->setCellValue('A7', 'No');
+        $sheet->setCellValue('B7', 'Ruang');
+        // C7 intentionally blank (part of B column visual grouping)
+
+        // Bulan lalu columns (D-H) - merged D7:D8, E7:E8, etc.
+        $singleHeaders = [
+            'D' => 'PEG.',  'E' => 'ISTRI', 'F' => 'ANAK',
+            'G' => 'JIWA',  'H' => 'JML. KOTOR',
+            'I' => 'PEG.',  'J' => 'ISTRI', 'K' => 'ANAK',
+            'L' => 'JIWA',  'M' => 'JML. KOTOR',
+        ];
+        foreach ($singleHeaders as $col => $text) {
+            $sheet->mergeCells("{$col}7:{$col}8");
+            $sheet->setCellValue("{$col}7", $text);
+            $sheet->getStyle("{$col}7")->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER)
+                ->setWrapText(true);
         }
-        $sheet->getRowDimension($r)->setRowHeight(30);
 
-        // ── Data rows ─────────────────────────────────────────────────────────
+        // Perbedaan columns - merged header pairs in R7
+        $sheet->mergeCells('N7:O7');
+        $sheet->setCellValue('N7', 'PEGAWAI');
+        $sheet->getStyle('N7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('P7:Q7');
+        $sheet->setCellValue('P7', 'ISTRI');
+        $sheet->getStyle('P7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('R7:S7');
+        $sheet->setCellValue('R7', 'ANAK');
+        $sheet->getStyle('R7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // ── R8: TAMBAH / KURANG sub-headers ────────────────────────────────
+        $sheet->setCellValue('N8', 'TAMBAH');
+        $sheet->setCellValue('O8', 'KURANG');
+        $sheet->setCellValue('P8', 'TAMBAH');
+        $sheet->setCellValue('Q8', 'KURANG');
+        $sheet->setCellValue('R8', 'TAMBAH');
+        $sheet->setCellValue('S8', 'KURANG');
+        $sheet->getStyle('N8:S8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Merge A7:A8 and B7:B8 for vertical centering
+        $sheet->mergeCells('A7:A8');
+        $sheet->getStyle('A7')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->mergeCells('B7:B8');
+        $sheet->getStyle('B7')->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        // C7:C8 (blank column for golongan code)
+        $sheet->mergeCells('C7:C8');
+
+        // Bold the entire header area R6:S8
+        $sheet->getStyle('A6:S8')->getFont()->setBold(true);
+
+        // ── R9: Column numbers 1-18 ────────────────────────────────────────
+        $colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S'];
+        foreach ($colLetters as $idx => $col) {
+            $sheet->setCellValue("{$col}9", $idx + 1);
+            $sheet->getStyle("{$col}9")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+        $sheet->getStyle('A9:S9')->getFont()->setSize(8);
+
+        // ── Data rows ─────────────────────────────────────────────────────
         $dataRow = 10;
-        $no = 1;
         $totLalu = ['peg' => 0, 'istri' => 0, 'anak' => 0, 'jiwa' => 0, 'kotor' => 0];
         $totNow  = $totLalu;
 
@@ -173,7 +259,6 @@ class GajPerbedaanExport
             // Subtotal golongan
             $this->writeDataRow($sheet, $dataRow, null, "Jumlah Gol {$groupRoman}", '', $groupLalu, $groupNow, true);
             $dataRow++;
-            $no++;
 
             foreach (['peg', 'istri', 'anak', 'jiwa', 'kotor'] as $k) {
                 $totLalu[$k] += $groupLalu[$k];
@@ -183,39 +268,54 @@ class GajPerbedaanExport
 
         // Grand total
         $this->writeDataRow($sheet, $dataRow, null, 'JUMLAH', '', $totLalu, $totNow, true);
+        $lastDataRow = $dataRow;
 
-        // ── Kolom lebar ───────────────────────────────────────────────────────
-        $sheet->getColumnDimension('A')->setWidth(4);
-        $sheet->getColumnDimension('B')->setWidth(16);
-        $sheet->getColumnDimension('C')->setWidth(8);
-        foreach (range('D', 'W') as $col) {
-            $sheet->getColumnDimension($col)->setWidth(11);
-        }
+        // ── Borders: entire data area A6:S[lastDataRow] ────────────────────
+        $sheet->getStyle("A6:S{$lastDataRow}")
+            ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        // ── TTD Section ────────────────────────────────────────────────────
+        $ttdStart = $lastDataRow + 3;
+
+        $sheet->setCellValue("B" . ($ttdStart + 2), 'Bendahara Pengeluaran');
+        $sheet->setCellValue("R" . ($ttdStart), self::NAMA_PENYIAP);
+        $sheet->setCellValue("R" . ($ttdStart + 2), 'Pembantu Bendahara Pengeluaran');
+        $sheet->setCellValue("R" . ($ttdStart + 3), 'Untuk Urusan Gaji');
+
+        $sheet->setCellValue("B" . ($ttdStart + 6), self::NAMA_BENDAHARA);
+        $sheet->getStyle("B" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
+        $sheet->setCellValue("B" . ($ttdStart + 7), self::NIP_BENDAHARA);
+
+        $sheet->setCellValue("R" . ($ttdStart + 6), self::NAMA_PENYIAP);
+        $sheet->getStyle("R" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
+        $sheet->setCellValue("R" . ($ttdStart + 7), self::NIP_PENYIAP);
     }
 
     private function writeDataRow($sheet, int $row, ?int $no, string $label, string $ruang, array $lalu, array $now, bool $bold = false): void
     {
-        if ($no !== null) $sheet->setCellValue("A{$row}", $no);
+        if ($no !== null) {
+            $sheet->setCellValue("A{$row}", $no);
+        }
         $sheet->setCellValue("B{$row}", $label);
         $sheet->setCellValue("C{$row}", $ruang);
 
         $fmt = fn ($v) => $v > 0 ? $v : '-';
 
-        // Bulan lalu
+        // Bulan lalu (D-H)
         $sheet->setCellValue("D{$row}", $fmt($lalu['peg']));
         $sheet->setCellValue("E{$row}", $fmt($lalu['istri']));
         $sheet->setCellValue("F{$row}", $fmt($lalu['anak']));
         $sheet->setCellValue("G{$row}", $fmt($lalu['jiwa']));
         $sheet->setCellValue("H{$row}", $lalu['kotor'] > 0 ? $lalu['kotor'] : '-');
 
-        // Bulan berkenaan
+        // Bulan berkenaan (I-M)
         $sheet->setCellValue("I{$row}", $fmt($now['peg']));
         $sheet->setCellValue("J{$row}", $fmt($now['istri']));
         $sheet->setCellValue("K{$row}", $fmt($now['anak']));
         $sheet->setCellValue("L{$row}", $fmt($now['jiwa']));
         $sheet->setCellValue("M{$row}", $now['kotor'] > 0 ? $now['kotor'] : '-');
 
-        // Perbedaan (TAMBAH/KURANG)
+        // Perbedaan: only PEGAWAI, ISTRI, ANAK (N-S) - no JIWA/JML.KOTOR
         $diff = fn (string $k) => [
             'tambah' => $now[$k] > $lalu[$k] ? $now[$k] - $lalu[$k] : '-',
             'kurang' => $now[$k] < $lalu[$k] ? $lalu[$k] - $now[$k] : '-',
@@ -223,35 +323,32 @@ class GajPerbedaanExport
         $dPeg   = $diff('peg');
         $dIstri = $diff('istri');
         $dAnak  = $diff('anak');
-        $dJiwa  = $diff('jiwa');
-        $dKotor = $diff('kotor');
 
-        $cols  = ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
-        $vals  = [$dPeg['tambah'], $dPeg['kurang'], $dIstri['tambah'], $dIstri['kurang'],
-                  $dAnak['tambah'], $dAnak['kurang'], $dJiwa['tambah'], $dJiwa['kurang'],
-                  $dKotor['tambah'], $dKotor['kurang']];
+        $cols = ['N', 'O', 'P', 'Q', 'R', 'S'];
+        $vals = [
+            $dPeg['tambah'], $dPeg['kurang'],
+            $dIstri['tambah'], $dIstri['kurang'],
+            $dAnak['tambah'], $dAnak['kurang'],
+        ];
 
         foreach ($cols as $i => $col) {
             $sheet->setCellValue("{$col}{$row}", $vals[$i]);
         }
 
-        // Alignment & bold
-        $range = "A{$row}:W{$row}";
-        $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // Alignment: center all columns
+        $sheet->getStyle("A{$row}:S{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Bold for subtotal/total rows
         if ($bold) {
-            $sheet->getStyle($range)->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:S{$row}")->getFont()->setBold(true);
         }
-        // Format angka
-        foreach (['H', 'M', 'V', 'W'] as $col) {
-            if (is_int($sheet->getCell("{$col}{$row}")->getValue())) {
+
+        // Number format for money columns (H and M)
+        foreach (['H', 'M'] as $col) {
+            $cellValue = $sheet->getCell("{$col}{$row}")->getValue();
+            if (is_int($cellValue) || is_float($cellValue)) {
                 $sheet->getStyle("{$col}{$row}")->getNumberFormat()->setFormatCode('#,##0');
             }
         }
-    }
-
-    private function styleTitle($sheet, string $cell): void
-    {
-        $sheet->getStyle($cell)->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle($cell)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 }

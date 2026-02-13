@@ -50,6 +50,7 @@ class PersonilForm
                                 'PA'                    => 'Pengguna Anggaran (PA)',
                                 'KPA'                   => 'Kuasa Pengguna Anggaran (KPA)',
                                 'Bendahara Pengeluaran' => 'Bendahara Pengeluaran',
+                                'Bendahara Gaji'        => 'Bendahara Gaji',
                                 'PPTK'                  => 'PPTK',
                             ])
                             ->native(false)
