@@ -115,6 +115,12 @@
             : '';
 
         $kodeRek = $rincian ? $rincian->kode_rekening : '';
+
+        $dpa       = $subKegiatan?->dpa;
+        $kodeSkpd  = '';
+        if ($dpa && $dpa->organisasi) {
+            $kodeSkpd = preg_match('/^([\d.]+)/', $dpa->organisasi, $m) ? $m[1] : '';
+        }
     @endphp
 
     {{--
@@ -167,7 +173,7 @@
         <tr>
             <td colspan="6" class="bl sm" style="padding:1px 3px;">SKPD / Kode Rekening</td>
             <td colspan="1" class="sm c">:</td>
-            <td colspan="13" class="br sm" style="padding:1px 3px;">KECAMATAN WATUMALANG &nbsp;/</td>
+            <td colspan="13" class="br sm" style="padding:1px 3px;">KECAMATAN WATUMALANG &nbsp;/ {{ $kodeSkpd }}</td>
         </tr>
         <tr>
             <td colspan="6" class="bl sm" style="padding:1px 3px;">Pengguna Angg. / Kuasa Peng. Angg.</td>
@@ -266,7 +272,7 @@
         <tr>
             <td colspan="5" class="bl" style="padding:1px 3px;">Kode rekening</td>
             <td colspan="1" class="c">:</td>
-            <td colspan="6" class="br b" style="padding:1px 3px;">{{ $kodeRek }}</td>
+            <td colspan="6" class="br b" style="padding:1px 3px;">{{ $kodeSkpd && $kodeRek ? $kodeSkpd . '.' . $kodeRek : $kodeRek }}</td>
             <td colspan="4" style="padding:1px 3px;">2.&nbsp;PPh 21</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br r" style="padding:1px 3px;">{{ $rp($pph21) }}</td>
