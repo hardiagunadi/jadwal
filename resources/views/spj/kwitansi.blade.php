@@ -283,7 +283,10 @@
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
             <td colspan="6" class="br c sm" style="padding:1px 3px;">
-                Wonosobo,{{ $tanggalRaw ? ' ' . $tanggalRaw : '' }}
+               
+            Wonosobo, ______________________ {{ $tahun }}
+
+                {{-- == Wonosobo,{{ $tanggalRaw ? ' ' . $tanggalRaw : '' }} == --}}
             </td>
             <td colspan="4" style="padding:1px 3px;">3.&nbsp;PPh 22</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
