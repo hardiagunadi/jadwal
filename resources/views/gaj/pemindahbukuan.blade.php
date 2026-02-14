@@ -120,6 +120,11 @@
             line-height: 1.6;
             text-align: justify;
         }
+        
+        /* Prevent orphaned TTD */
+        .body-text + .ttd-area {
+            margin-top: 16px;
+        }
 
         /* Tables */
         table.data {
@@ -181,6 +186,8 @@
         .ttd-area {
             margin-top: 16px;
             font-size: 12pt;
+            page-break-inside: avoid;
+            min-height: 120px;
         }
         .ttd-area table { width: 100%; }
         .ttd-area td {
@@ -209,6 +216,16 @@
             table.data {
                 width: 100%;
                 max-width: 100%;
+            }
+            /* Pastikan TTD tidak terpotong */
+            .ttd-area {
+                page-break-inside: avoid !important;
+                orphans: 4;
+                widows: 4;
+            }
+            /* Jika tabel terlalu panjang, pindahkan TTD ke halaman baru */
+            .body-text:last-of-type {
+                margin-bottom: 16px;
             }
         }
     </style>
@@ -258,7 +275,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el: watumalang08@gmail.com</a>
+                Pos-el: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="52253326273f333e333c35626a12353f333b3e7c313d3f">[email&#160;protected]</a></a>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -475,7 +492,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el: watumalang08@gmail.com</a>
+                Pos-el: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="285f495c5d45494449464f1810684f45494144064b4745">[email&#160;protected]</a></a>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -779,7 +796,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el: watumalang08@gmail.com
+                Pos-el: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b5c2d4c1c0d8d4d9d4dbd2858df5d2d8d4dcd99bd6dad8">[email&#160;protected]</a>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -979,17 +996,14 @@
 
         function updateTglLabel() {
             const d = tglInput.valueAsDate ? new Date(tglInput.value + 'T00:00:00') : new Date();
-            const text = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
+            const labelText = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
             tglLabels.forEach(label => {
-                label.textContent = text;
+                label.textContent = labelText;
             });
         }
 
-        // Set default date to today
         tglInput.value = new Date().toISOString().slice(0, 10);
         updateTglLabel();
-        
-        // Update when date changes
         tglInput.addEventListener('change', updateTglLabel);
     </script>
 </body>
