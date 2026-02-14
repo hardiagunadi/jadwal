@@ -113,6 +113,15 @@ Route::middleware('auth:personil')->group(function () {
     Route::get('/admin/gajs/{gaj}/export/pemindahbukuan', [GajExportController::class, 'pemindahbukuan'])
         ->name('gaj.export.pemindahbukuan');
 
+    Route::get('/admin/gajs/{gaj}/excel/perbedaan', [GajExportController::class, 'excelPerbedaan'])
+        ->name('gaj.excel.perbedaan');
+    Route::get('/admin/gajs/{gaj}/excel/rincian', [GajExportController::class, 'excelRincian'])
+        ->name('gaj.excel.rincian');
+    Route::get('/admin/gajs/{gaj}/excel/jml-peg', [GajExportController::class, 'excelJmlPeg'])
+        ->name('gaj.excel.jml-peg');
+    Route::get('/admin/gajs/{gaj}/excel/pemindahbukuan', [GajExportController::class, 'excelPemindahbukuan'])
+        ->name('gaj.excel.pemindahbukuan');
+
     Route::get('/admin/bku/{bku}/cetak', [BkuController::class, 'cetak'])
         ->name('bku.cetak');
     Route::get('/admin/bku/{bku}/pemindahbukuan', [BkuController::class, 'pemindahbukuan'])

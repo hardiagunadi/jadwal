@@ -83,7 +83,11 @@
 </head>
 <body>
     <div class="no-print">
+        <label style="font-size:8pt;">Tanggal cetak:
+            <input type="date" id="tglCetak" style="font-size:8pt; padding:2px 4px;">
+        </label>
         <button onclick="window.print()">Cetak / Simpan PDF</button>
+        <a href="{{ route('gaj.excel.perbedaan', $gaj) }}" style="padding:3px 12px; background:#16a34a; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:8pt; text-decoration:none;">Unduh Excel</a>
         <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
     </div>
 
@@ -114,7 +118,7 @@
             <th rowspan="3" style="width:30px;"></th>
             <th colspan="5">I. Bulan : {{ $bulanLaluLabel }}</th>
             <th colspan="5">II. Bulan : {{ $gaj->periode }}</th>
-            <th colspan="6">III. PERBEDAAN</th>
+            <th colspan="10">III. PERBEDAAN</th>
         </tr>
         {{-- ══ Header Row 2: Column labels ══ --}}
         <tr>
@@ -131,19 +135,25 @@
             <th colspan="2">PEGAWAI</th>
             <th colspan="2">ISTRI</th>
             <th colspan="2">ANAK</th>
+            <th colspan="2">JIWA</th>
+            <th colspan="2">JUMLAH KOTOR</th>
         </tr>
         {{-- ══ Header Row 3: TAMBAH/KURANG ══ --}}
         <tr>
-            <th style="width:48px;">TAMBAH</th>
-            <th style="width:48px;">KURANG</th>
-            <th style="width:48px;">TAMBAH</th>
-            <th style="width:48px;">KURANG</th>
-            <th style="width:48px;">TAMBAH</th>
-            <th style="width:48px;">KURANG</th>
+            <th style="width:40px;">TAMBAH</th>
+            <th style="width:40px;">KURANG</th>
+            <th style="width:40px;">TAMBAH</th>
+            <th style="width:40px;">KURANG</th>
+            <th style="width:40px;">TAMBAH</th>
+            <th style="width:40px;">KURANG</th>
+            <th style="width:40px;">TAMBAH</th>
+            <th style="width:40px;">KURANG</th>
+            <th style="width:60px;">TAMBAH</th>
+            <th style="width:60px;">KURANG</th>
         </tr>
         {{-- ══ Header Row 4: Column numbers ══ --}}
         <tr>
-            @for ($c = 1; $c <= 19; $c++)
+            @for ($c = 1; $c <= 23; $c++)
                 <th style="font-size:6pt; font-weight:normal;">{{ $c }}</th>
             @endfor
         </tr>
@@ -171,6 +181,8 @@
                     $dPeg   = ['t' => max(0, $now['peg']   - $lalu['peg']),   'k' => max(0, $lalu['peg']   - $now['peg'])];
                     $dIstri = ['t' => max(0, $now['istri']  - $lalu['istri']), 'k' => max(0, $lalu['istri'] - $now['istri'])];
                     $dAnak  = ['t' => max(0, $now['anak']   - $lalu['anak']),  'k' => max(0, $lalu['anak']  - $now['anak'])];
+                    $dJiwa  = ['t' => max(0, $now['jiwa']   - $lalu['jiwa']),  'k' => max(0, $lalu['jiwa']  - $now['jiwa'])];
+                    $dKotor = ['t' => max(0, $now['kotor']  - $lalu['kotor']), 'k' => max(0, $lalu['kotor'] - $now['kotor'])];
 
                     foreach (['peg','istri','anak','jiwa','kotor'] as $k) {
                         $groupLalu[$k] += $lalu[$k];
@@ -197,6 +209,10 @@
                     <td>{{ $dash($dIstri['k']) }}</td>
                     <td>{{ $dash($dAnak['t']) }}</td>
                     <td>{{ $dash($dAnak['k']) }}</td>
+                    <td>{{ $dash($dJiwa['t']) }}</td>
+                    <td>{{ $dash($dJiwa['k']) }}</td>
+                    <td class="r">{{ $dashRp($dKotor['t']) }}</td>
+                    <td class="r">{{ $dashRp($dKotor['k']) }}</td>
                 </tr>
             @endforeach
 
@@ -205,6 +221,8 @@
                 $dGPeg   = ['t' => max(0, $groupNow['peg']   - $groupLalu['peg']),   'k' => max(0, $groupLalu['peg']   - $groupNow['peg'])];
                 $dGIstri = ['t' => max(0, $groupNow['istri']  - $groupLalu['istri']), 'k' => max(0, $groupLalu['istri'] - $groupNow['istri'])];
                 $dGAnak  = ['t' => max(0, $groupNow['anak']   - $groupLalu['anak']),  'k' => max(0, $groupLalu['anak']  - $groupNow['anak'])];
+                $dGJiwa  = ['t' => max(0, $groupNow['jiwa']   - $groupLalu['jiwa']),  'k' => max(0, $groupLalu['jiwa']  - $groupNow['jiwa'])];
+                $dGKotor = ['t' => max(0, $groupNow['kotor']  - $groupLalu['kotor']), 'k' => max(0, $groupLalu['kotor'] - $groupNow['kotor'])];
 
                 foreach (['peg','istri','anak','jiwa','kotor'] as $k) {
                     $totLalu[$k] += $groupLalu[$k];
@@ -231,6 +249,10 @@
                 <td class="b">{{ $dash($dGIstri['k']) }}</td>
                 <td class="b">{{ $dash($dGAnak['t']) }}</td>
                 <td class="b">{{ $dash($dGAnak['k']) }}</td>
+                <td class="b">{{ $dash($dGJiwa['t']) }}</td>
+                <td class="b">{{ $dash($dGJiwa['k']) }}</td>
+                <td class="r b">{{ $dashRp($dGKotor['t']) }}</td>
+                <td class="r b">{{ $dashRp($dGKotor['k']) }}</td>
             </tr>
         @endforeach
 
@@ -239,6 +261,8 @@
             $dTPeg   = ['t' => max(0, $totNow['peg']   - $totLalu['peg']),   'k' => max(0, $totLalu['peg']   - $totNow['peg'])];
             $dTIstri = ['t' => max(0, $totNow['istri']  - $totLalu['istri']), 'k' => max(0, $totLalu['istri'] - $totNow['istri'])];
             $dTAnak  = ['t' => max(0, $totNow['anak']   - $totLalu['anak']),  'k' => max(0, $totLalu['anak']  - $totNow['anak'])];
+            $dTJiwa  = ['t' => max(0, $totNow['jiwa']   - $totLalu['jiwa']),  'k' => max(0, $totLalu['jiwa']  - $totNow['jiwa'])];
+            $dTKotor = ['t' => max(0, $totNow['kotor']  - $totLalu['kotor']), 'k' => max(0, $totLalu['kotor'] - $totNow['kotor'])];
         @endphp
         <tr class="b">
             <td></td>
@@ -260,6 +284,10 @@
             <td class="b">{{ $dash($dTIstri['k']) }}</td>
             <td class="b">{{ $dash($dTAnak['t']) }}</td>
             <td class="b">{{ $dash($dTAnak['k']) }}</td>
+            <td class="b">{{ $dash($dTJiwa['t']) }}</td>
+            <td class="b">{{ $dash($dTJiwa['k']) }}</td>
+            <td class="r b">{{ $dashRp($dTKotor['t']) }}</td>
+            <td class="r b">{{ $dashRp($dTKotor['k']) }}</td>
         </tr>
         </tbody>
     </table>
@@ -269,7 +297,7 @@
         <table>
             <tr>
                 <td style="width:50%;"></td>
-                <td style="width:50%;"></td>
+                <td style="width:50%;"><span id="tglCetakLabel"></span></td>
             </tr>
             <tr>
                 <td></td>
@@ -292,7 +320,18 @@
     </div>
 
     <script>
-        window.addEventListener('load', function () { window.print(); });
+        const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const tglInput = document.getElementById('tglCetak');
+        const tglLabel = document.getElementById('tglCetakLabel');
+
+        function updateTglLabel() {
+            const d = tglInput.valueAsDate ? new Date(tglInput.value + 'T00:00:00') : new Date();
+            tglLabel.textContent = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
+        }
+
+        tglInput.value = new Date().toISOString().slice(0, 10);
+        updateTglLabel();
+        tglInput.addEventListener('change', updateTglLabel);
     </script>
 </body>
 </html>

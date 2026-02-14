@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\GajJmlPegExport;
+use App\Exports\GajPemindahbukuanExport;
+use App\Exports\GajPerbedaanExport;
+use App\Exports\GajRincianExport;
 use App\Models\Gaj;
 use App\Models\GajKorpri;
 use App\Models\Personil;
 use App\Services\GajLaporanService;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GajExportController extends Controller
 {
@@ -207,5 +212,25 @@ class GajExportController extends Controller
             'namaPenyiap'   => $bendaharaGaji->nama ?? '—',
             'nipPenyiap'    => 'NIP. ' . ($bendaharaGaji->nip ?? ''),
         ]));
+    }
+
+    public function excelPerbedaan(Gaj $gaj): StreamedResponse
+    {
+        return (new GajPerbedaanExport())->download($gaj);
+    }
+
+    public function excelRincian(Gaj $gaj): StreamedResponse
+    {
+        return (new GajRincianExport())->download($gaj);
+    }
+
+    public function excelJmlPeg(Gaj $gaj): StreamedResponse
+    {
+        return (new GajJmlPegExport())->download($gaj);
+    }
+
+    public function excelPemindahbukuan(Gaj $gaj): StreamedResponse
+    {
+        return (new GajPemindahbukuanExport())->download($gaj);
     }
 }

@@ -76,7 +76,11 @@
 </head>
 <body>
     <div class="no-print">
+        <label style="font-size:8pt;">Tanggal cetak:
+            <input type="date" id="tglCetak" style="font-size:8pt; padding:2px 4px;">
+        </label>
         <button onclick="window.print()">Cetak / Simpan PDF</button>
+        <a href="{{ route('gaj.excel.rincian', $gaj) }}" style="padding:3px 12px; background:#16a34a; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:8pt; text-decoration:none;">Unduh Excel</a>
         <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
     </div>
 
@@ -109,7 +113,7 @@
         <tr>
             <td class="label">KODE REKENING</td>
             <td class="sep">:</td>
-            <td>2.01.13.1.1.03.2</td>
+            <td>7.01.01.2.02.0001</td>
         </tr>
         <tr>
             <td class="label">NPWP</td>
@@ -394,7 +398,7 @@
         <table>
             <tr>
                 <td style="width:50%;"></td>
-                <td style="width:50%;">Mengetahui,</td>
+                <td style="width:50%;"><span id="tglCetakLabel"></span></td>
             </tr>
             <tr>
                 <td></td>
@@ -417,7 +421,18 @@
     </div>
 
     <script>
-        window.addEventListener('load', function () { window.print(); });
+        const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const tglInput = document.getElementById('tglCetak');
+        const tglLabel = document.getElementById('tglCetakLabel');
+
+        function updateTglLabel() {
+            const d = tglInput.valueAsDate ? new Date(tglInput.value + 'T00:00:00') : new Date();
+            tglLabel.textContent = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
+        }
+
+        tglInput.value = new Date().toISOString().slice(0, 10);
+        updateTglLabel();
+        tglInput.addEventListener('change', updateTglLabel);
     </script>
 </body>
 </html>

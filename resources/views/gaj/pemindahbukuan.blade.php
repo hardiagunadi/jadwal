@@ -169,7 +169,11 @@
 </head>
 <body>
     <div class="no-print">
+        <label style="font-size:8pt;">Tanggal cetak:
+            <input type="date" id="tglCetak" style="font-size:8pt; padding:2px 4px;">
+        </label>
         <button onclick="window.print()">Cetak / Simpan PDF</button>
+        <a href="{{ route('gaj.excel.pemindahbukuan', $gaj) }}" style="padding:3px 12px; background:#16a34a; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:8pt; text-decoration:none;">Unduh Excel</a>
         <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
     </div>
 
@@ -215,7 +219,7 @@
         <div class="kop-line-inner"></div>
 
         {{-- Tanggal --}}
-        <div class="date-right">Wonosobo, {{ $tanggal }}</div>
+        <div class="date-right"><span class="tgl-cetak-label"></span></div>
 
         {{-- Nomor / Lampiran / Perihal --}}
         <table class="surat-info">
@@ -432,7 +436,7 @@
         <div class="kop-line-inner"></div>
 
         {{-- Tanggal --}}
-        <div class="date-right">Wonosobo, {{ $tanggal }}</div>
+        <div class="date-right"><span class="tgl-cetak-label"></span></div>
 
         {{-- Nomor / Lampiran / Perihal --}}
         <table class="surat-info">
@@ -661,7 +665,7 @@
         <div class="kop-line-inner"></div>
 
         {{-- Tanggal --}}
-        <div class="date-right">Wonosobo, {{ $tanggal }}</div>
+        <div class="date-right"><span class="tgl-cetak-label"></span></div>
 
         {{-- Nomor / Lampiran / Perihal --}}
         <table class="surat-info">
@@ -848,7 +852,22 @@
     @endif
 
     <script>
-        window.addEventListener('load', function () { window.print(); });
+        const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const tglInput = document.getElementById('tglCetak');
+        const tglLabels = document.querySelectorAll('.tgl-cetak-label');
+
+        function updateTglLabel() {
+            const d = tglInput.valueAsDate ? new Date(tglInput.value + 'T00:00:00') : new Date();
+            const text = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
+            tglLabels.forEach(el => el.textContent = text);
+        }
+
+        // Default: hari terakhir bulan gaji
+        const y = {{ $gaj->tahun }}, m = {{ $gaj->bulan }};
+        const lastDay = new Date(y, m, 0);
+        tglInput.value = lastDay.toISOString().slice(0, 10);
+        updateTglLabel();
+        tglInput.addEventListener('change', updateTglLabel);
     </script>
 </body>
 </html>
