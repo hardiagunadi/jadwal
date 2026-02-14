@@ -29,8 +29,24 @@ class GajImportService
         return $this->importFromText($text, $seksiAkronim);
     }
 
-    public function importFromText(string $text, ?string $seksiAkronim = null): array
+    /**
+     * Parse PDF daftar gaji dari SIPD tanpa import.
+     * Mengembalikan ['header' => array, 'pegawais' => array].
+     */
+    public function parseOnly(string $pdfPath): array
     {
+        $pdftotext = '/usr/bin/pdftotext';
+
+        if (! file_exists($pdftotext)) {
+            throw new \RuntimeException('pdftotext tidak ditemukan. Pastikan poppler-utils terinstal.');
+        }
+
+        $text = shell_exec($pdftotext . ' -layout ' . escapeshellarg($pdfPath) . ' -');
+
+        if (empty($text)) {
+            throw new \RuntimeException('Gagal membaca PDF atau file kosong.');
+        }
+
         $text  = preg_replace('/\r\n|\r/', "\n", $text);
         $lines = explode("\n", $text);
 
@@ -39,6 +55,18 @@ class GajImportService
 
         if (empty($pegawais)) {
             throw new \RuntimeException('Tidak ada data pegawai yang dapat diparsing dari PDF ini.');
+        }
+
+        return [
+            'header'   => $header,
+            'pegawais' => $pegawais,
+        ];
+    }
+
+    public function importFromParsedData(array $header, array $pegawais, ?string $seksiAkronim = null): array
+    {
+        if (empty($pegawais)) {
+            throw new \RuntimeException('Tidak ada data pegawai untuk diimport.');
         }
 
         return DB::transaction(function () use ($header, $pegawais, $seksiAkronim) {
@@ -74,6 +102,21 @@ class GajImportService
                 'jumlah' => count($pegawais),
             ];
         });
+    }
+
+    public function importFromText(string $text, ?string $seksiAkronim = null): array
+    {
+        $text  = preg_replace('/\r\n|\r/', "\n", $text);
+        $lines = explode("\n", $text);
+
+        $header   = $this->parseHeader($text);
+        $pegawais = $this->parsePegawais($lines);
+
+        if (empty($pegawais)) {
+            throw new \RuntimeException('Tidak ada data pegawai yang dapat diparsing dari PDF ini.');
+        }
+
+        return $this->importFromParsedData($header, $pegawais, $seksiAkronim);
     }
 
     // ─── Header ──────────────────────────────────────────────────────────────
@@ -315,25 +358,32 @@ class GajImportService
     // ─── Utilities ───────────────────────────────────────────────────────────
 
     /**
-     * Ekstrak angka terakhir dari rentang karakter tertentu di sebuah baris.
+     * Ekstrak angka terakhir yang MULAI di rentang [$start, $end) pada baris.
+     *
+     * Tidak menggunakan substr agar angka yang melewati batas kolom
+     * tidak terpotong (misal "3,291,900" di pos 151 melewati batas 157).
      */
     private function extractLastNumInRange(string $line, int $start, int $end): int
     {
-        $len     = strlen($line);
-        $end     = min($end, $len);
-        if ($start >= $end) {
+        if ($start >= strlen($line)) {
             return 0;
         }
 
-        $segment = substr($line, $start, $end - $start);
-        preg_match_all('/\d[\d,]*/', $segment, $m);
+        // Cari semua angka di seluruh baris beserta posisinya
+        preg_match_all('/\d[\d,]*/', $line, $matches, PREG_OFFSET_CAPTURE);
 
-        if (empty($m[0])) {
+        if (empty($matches[0])) {
             return 0;
         }
 
-        $last = end($m[0]);
+        // Ambil angka terakhir yang posisi awalnya dalam rentang kolom
+        $result = 0;
+        foreach ($matches[0] as [$numStr, $offset]) {
+            if ($offset >= $start && $offset < $end) {
+                $result = (int) str_replace(',', '', $numStr);
+            }
+        }
 
-        return (int) str_replace(',', '', $last);
+        return $result;
     }
 }
