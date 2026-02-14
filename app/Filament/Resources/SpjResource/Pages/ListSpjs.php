@@ -32,9 +32,19 @@ class ListSpjs extends ListRecords
                     Select::make('dpa_sub_kegiatan_id')
                         ->label('Sub Kegiatan DPA')
                         ->options(function () {
+                            $user = auth()->user();
+                            $isAdmin = $user?->isAdmin();
+                            $userAkronim = strtolower(trim((string) ($user?->jabatan_akronim ?? '')));
+
                             $query = DpaSubKegiatan::query()
                                 ->with('dpa')
                                 ->orderBy('kode');
+
+                            if (! $isAdmin && $userAkronim !== '') {
+                                $query->whereHas('dpa', function ($q) use ($userAkronim) {
+                                    $q->whereRaw('LOWER(TRIM(seksi_akronim)) = ?', [$userAkronim]);
+                                });
+                            }
 
                             $groups = [];
                             foreach ($query->get() as $sub) {

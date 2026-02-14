@@ -428,6 +428,19 @@ class SpjResource extends Resource
                 Spj::query()
                     ->with(['suratKeluar.requester', 'personil', 'dpaRincianBelanja.subKegiatan', 'bkus'])
                     ->withCount(['penerimas'])
+                    ->when(
+                        ! auth()->user()?->isAdmin(),
+                        function (Builder $query) {
+                            $akronim = strtolower(trim((string) (auth()->user()?->jabatan_akronim ?? '')));
+                            if ($akronim !== '') {
+                                $query->whereHas('dpaRincianBelanja.subKegiatan.dpa', function ($q) use ($akronim) {
+                                    $q->whereRaw('LOWER(TRIM(seksi_akronim)) = ?', [$akronim]);
+                                });
+                            } else {
+                                $query->whereRaw('1 = 0');
+                            }
+                        }
+                    )
             )
             ->defaultSort(function (Builder $query): Builder {
                 return $query

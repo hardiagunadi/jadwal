@@ -94,9 +94,25 @@ class DpaResource extends Resource
                                 ->mapWithKeys(fn ($v) => [strtolower(trim($v)) => strtoupper(trim($v))])
                                 ->toArray();
                         })
+                        ->default(function () {
+                            $user = auth()->user();
+                            if ($user && ! $user->isAdmin()) {
+                                return strtolower(trim((string) ($user->jabatan_akronim ?? ''))) ?: null;
+                            }
+
+                            return null;
+                        })
+                        ->disabled(fn () => ! auth()->user()?->isAdmin())
+                        ->dehydrated()
                         ->searchable()
                         ->nullable()
-                        ->helperText('Pilih seksi pemilik DPA. Digunakan untuk memfilter pilihan di form SPJ.'),
+                        ->helperText(function () {
+                            if (auth()->user()?->isAdmin()) {
+                                return 'Pilih seksi pemilik DPA. Digunakan untuk memfilter pilihan di form SPJ.';
+                            }
+
+                            return 'Seksi otomatis diisi sesuai akun Anda.';
+                        }),
                 ])
                 ->columns(3),
 
@@ -139,7 +155,19 @@ class DpaResource extends Resource
     {
         return $table
             ->query(
-                Dpa::query()->withCount('subKegiatans')
+                Dpa::query()
+                    ->withCount('subKegiatans')
+                    ->when(
+                        ! auth()->user()?->isAdmin(),
+                        function (Builder $query) {
+                            $akronim = strtolower(trim((string) (auth()->user()?->jabatan_akronim ?? '')));
+                            if ($akronim !== '') {
+                                $query->whereRaw('LOWER(TRIM(seksi_akronim)) = ?', [$akronim]);
+                            } else {
+                                $query->whereRaw('1 = 0'); // no akronim → no results
+                            }
+                        }
+                    )
             )
             ->defaultSort('tahun', 'desc')
             ->columns([
