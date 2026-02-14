@@ -11,7 +11,7 @@
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 12pt;
             color: #000;
             background: #fff;
         }
@@ -38,7 +38,7 @@
         .title {
             text-align: center;
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 12pt;
             margin-top: 10px;
             line-height: 1.5;
         }
@@ -46,8 +46,9 @@
         table.data {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 11pt;
             margin-top: 8px;
+            table-layout: fixed;
         }
         table.data th,
         table.data td {
@@ -56,16 +57,36 @@
             text-align: center;
             vertical-align: middle;
         }
+        table.data td:first-child,
+        table.data th:first-child {
+            width: 200px;
+        }
+        table.data td:not(:first-child),
+        table.data th:not(:first-child) {
+            width: auto;
+        }
         table.data th {
             font-weight: bold;
             background: #fff;
         }
         .b { font-weight: bold; }
         td.l { text-align: left; }
+        
+        /* Subtotal rows - abu-abu muda */
+        tr.subtotal td {
+            background: #e5e7eb;
+            font-weight: bold;
+        }
+        
+        /* Grand total row - abu-abu lebih gelap */
+        tr.grand-total td {
+            background: #d1d5db;
+            font-weight: bold;
+        }
 
         .ttd-area {
             margin-top: 20px;
-            font-size: 9pt;
+            font-size: 12pt;
         }
         .ttd-area table { width: 100%; }
         .ttd-area td { vertical-align: top; text-align: center; padding: 1px 4px; }
@@ -101,8 +122,8 @@
             'I' => array_map(fn($g) => ["GOL-{$g}", "Gol. {$g}"], range(4,1)),
         ];
         $rowGroups = $isPns ? $pnsGroups : $pppkGroups;
-        $eselonCols = $isPns ? [1,2,3,4] : ['I','II','III','IV','STAF'];
-        $eselonLabels = $isPns ? ['I','II','III','IV'] : ['I','II','III','IV','STAF'];
+        $eselonCols = $isPns ? [1,2,3,4,'STAF'] : ['I','II','III','IV','STAF'];
+        $eselonLabels = $isPns ? ['I','II','III','IV','STAF'] : ['I','II','III','IV','STAF'];
         $colCount = count($eselonCols);
     @endphp
 
@@ -127,16 +148,16 @@
                 @endforeach
             </tr>
             <tr>
-                <th style="font-size:7pt; font-weight:normal;">1</th>
+                <th style="font-size:11pt; font-weight:normal;">1</th>
                 @for ($c = 2; $c <= $colCount + 1; $c++)
-                    <th style="font-size:7pt; font-weight:normal;">{{ $c }}</th>
+                    <th style="font-size:11pt; font-weight:normal;">{{ $c }}</th>
                 @endfor
-                <th style="font-size:7pt; font-weight:normal;">{{ $colCount + 2 }}</th>
+                <th style="font-size:11pt; font-weight:normal;">{{ $colCount + 2 }}</th>
             </tr>
         </thead>
         <tbody>
             @php
-                $grandTotal = array_fill_keys($isPns ? [1,2,3,4] : ['I','II','III','IV','STAF'], 0);
+                $grandTotal = array_fill_keys($isPns ? [1,2,3,4,'STAF'] : ['I','II','III','IV','STAF'], 0);
                 $grandRowTotal = 0;
             @endphp
 
@@ -175,7 +196,7 @@
                     }
                     $grandRowTotal += $groupRowTotal;
                 @endphp
-                <tr class="b">
+                <tr class="b subtotal">
                     <td class="b">Jumlah Golongan {{ $groupRoman }}</td>
                     @foreach ($eselonCols as $col)
                         <td class="b">{{ $groupSubtotal[$col] }}</td>
@@ -185,7 +206,7 @@
             @endforeach
 
             {{-- Grand total --}}
-            <tr class="b">
+            <tr class="b grand-total">
                 <td class="b">Jumlah I s/d IV</td>
                 @foreach ($eselonCols as $col)
                     <td class="b">{{ $grandTotal[$col] }}</td>
@@ -203,25 +224,25 @@
                 <td style="width:50%;"><span id="tglCetakLabel"></span></td>
             </tr>
             <tr>
-                <td>Bendahara Pengeluaran</td>
+                <td></td>
                 <td></td>
             </tr>
             <tr>
-                <td></td>
+                <td>Bendahara Pengeluaran</td>
                 <td>Pembantu Bendahara Pengeluaran</td>
             </tr>
             <tr>
                 <td></td>
                 <td>Untuk Urusan Gaji</td>
             </tr>
-            <tr style="height:40px;"><td></td><td></td></tr>
+            <tr style="height:60px;"><td></td><td></td></tr>
             <tr>
                 <td><span class="name">{{ $namaBendahara }}</span></td>
-                <td></td>
+                <td><span class="name">{{ $namaPembantu }}</span></td>
             </tr>
             <tr>
                 <td>{{ $nipBendahara }}</td>
-                <td></td>
+                <td>{{ $nipPembantu }}</td>
             </tr>
         </table>
     </div>

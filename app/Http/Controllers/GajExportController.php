@@ -117,22 +117,25 @@ class GajExportController extends Controller
         ]);
     }
 
-    public function jmlPeg(Gaj $gaj): View
-    {
-        $svc  = app(GajLaporanService::class);
-        $data = $svc->jmlPegPerGolEselon($gaj);
-        $isPns = $gaj->jenis === 'pns';
+	public function jmlPeg(Gaj $gaj): View
+	{
+		$svc  = app(GajLaporanService::class);
+		$data = $svc->jmlPegPerGolEselon($gaj);
+		$isPns = $gaj->jenis === 'pns';
 
-        $bendahara = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+		$bendahara     = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+		$bendaharaGaji = Personil::where('jabatan_lainnya', 'Bendahara Gaji')->first();
 
-        return view('gaj.jml-peg', [
-            'gaj'            => $gaj,
-            'data'           => $data,
-            'isPns'          => $isPns,
-            'namaBendahara'  => $bendahara->nama ?? '—',
-            'nipBendahara'   => 'NIP. ' . ($bendahara->nip ?? ''),
-        ]);
-    }
+		return view('gaj.jml-peg', [
+			'gaj'            => $gaj,
+			'data'           => $data,
+			'isPns'          => $isPns,
+			'namaBendahara'  => $bendahara->nama ?? '—',
+			'nipBendahara'   => 'NIP. ' . ($bendahara->nip ?? ''),
+			'namaPembantu'   => $bendaharaGaji->nama ?? '—',        // ✅ DITAMBAHKAN
+			'nipPembantu'    => 'NIP. ' . ($bendaharaGaji->nip ?? ''), // ✅ DITAMBAHKAN
+		]);
+	}
 
     public function pemindahbukuan(Gaj $gaj): View
     {

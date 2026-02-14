@@ -219,15 +219,16 @@ class GajLaporanService
                 $g = $this->parseGolonganPns($p->golongan);
                 if (! $g) continue;
                 $key    = $g['full'];
-                $eselon = $this->eselonLevel($p->tunj_eselon) ?? 'STAF';
+                $eselon = $this->eselonLevel($p->tunj_eselon);
 
                 if (! isset($result[$key])) {
-                    $result[$key] = [1 => 0, 2 => 0, 3 => 0, 4 => 0];
+                    $result[$key] = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 'STAF' => 0];
                 }
-                if (is_int($eselon)) {
+                if ($eselon !== null) {
                     $result[$key][$eselon]++;
+                } else {
+                    $result[$key]['STAF']++;
                 }
-                // Staf PNS tidak dimasukkan ke kolom eselon (tetap 0)
             } else {
                 $gol = $this->parseGolonganPppk($p->golongan);
                 if ($gol === null) continue;

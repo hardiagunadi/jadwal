@@ -11,7 +11,7 @@
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 8pt;
+            font-size: 12pt;
             color: #000;
             background: #fff;
         }
@@ -37,12 +37,12 @@
 
         h2 {
             text-align: center;
-            font-size: 11pt;
+            font-size: 12pt;
             font-weight: bold;
             margin-bottom: 6px;
         }
 
-        .info { margin-bottom: 4px; font-size: 8pt; }
+        .info { margin-bottom: 4px; font-size: 10pt; }
         .info td { padding: 0 3px; }
         .info .label { width: 140px; }
         .info .sep { width: 8px; }
@@ -50,7 +50,7 @@
         table.data {
             width: 100%;
             border-collapse: collapse;
-            font-size: 7.5pt;
+            font-size: 10pt;
         }
         table.data th,
         table.data td {
@@ -66,10 +66,22 @@
         table.data td.l { text-align: left; }
         table.data td.r { text-align: right; }
         .b { font-weight: bold; }
+        
+        /* Subtotal rows - abu-abu muda */
+        tr.subtotal td {
+            background: #e5e7eb;
+            font-weight: bold;
+        }
+        
+        /* Grand total row - abu-abu lebih gelap */
+        tr.grand-total td {
+            background: #d1d5db;
+            font-weight: bold;
+        }
 
         .ttd-area {
             margin-top: 12px;
-            font-size: 8pt;
+            font-size: 12pt;
         }
         .ttd-area table { width: 100%; }
         .ttd-area td { vertical-align: top; text-align: center; padding: 1px 4px; }
@@ -232,7 +244,7 @@
                 
                 $groupNumber++;  // Increment group number after each group
             @endphp
-            <tr class="b">
+            <tr class="b subtotal">
                 <td></td>
                 <td class="l b">Jumlah Gol {{ $groupRoman }}</td>
                 <td class="b">{{ $dash($groupLalu['peg']) }}</td>
@@ -266,7 +278,7 @@
             $dTJiwa  = ['t' => max(0, $totNow['jiwa']   - $totLalu['jiwa']),  'k' => max(0, $totLalu['jiwa']  - $totNow['jiwa'])];
             $dTKotor = ['t' => max(0, $totNow['kotor']  - $totLalu['kotor']), 'k' => max(0, $totLalu['kotor'] - $totNow['kotor'])];
         @endphp
-        <tr class="b">
+        <tr class="b grand-total">
             <td></td>
             <td class="l b">JUMLAH</td>
             <td class="b">{{ $dash($totLalu['peg']) }}</td>
@@ -308,7 +320,7 @@
                 <td>Bendahara Pengeluaran</td>
                 <td>Untuk Urusan Gaji</td>
             </tr>
-            <tr style="height:30px;"><td></td><td></td></tr>
+            <tr style="height:60px;"><td></td><td></td></tr>
             <tr>
                 <td><span class="name">{{ $namaBendahara }}</span></td>
                 <td><span class="name">{{ $namaPenyiap }}</span></td>

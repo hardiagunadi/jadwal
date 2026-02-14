@@ -5,13 +5,20 @@
     <title>Pemindahbukuan Gaji ASN {{ strtoupper($gaj->jenis) }} {{ $gaj->periode }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        @page { size: A4 portrait; margin: 10mm 12mm; }
+        @page { size: A4 portrait; margin: 10mm 16mm; }
+        @page :first { size: A4 portrait; }
+        
+        /* Landscape for lampiran pages */
+        .page.lampiran {
+            page-break-before: always;
+        }
+        @page lampiran { size: A4 landscape; margin: 10mm 15mm; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 12pt;
             color: #000;
             background: #fff;
         }
@@ -82,7 +89,7 @@
 
         /* Surat pengantar */
         .surat-info {
-            font-size: 9pt;
+            font-size: 12pt;
             line-height: 1.5;
         }
         .surat-info td {
@@ -90,7 +97,7 @@
             vertical-align: top;
         }
         .surat-info .label {
-            width: 80px;
+            width: 120px;
         }
         .surat-info .sep {
             width: 10px;
@@ -99,17 +106,17 @@
         .date-right {
             text-align: right;
             margin: 8px 0;
-            font-size: 9pt;
+            font-size: 12pt;
         }
 
         .addressee {
             margin: 8px 0;
-            font-size: 9pt;
+            font-size: 12pt;
             line-height: 1.5;
         }
 
         .body-text {
-            font-size: 9pt;
+            font-size: 12pt;
             line-height: 1.6;
             text-align: justify;
         }
@@ -118,37 +125,62 @@
         table.data {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 11pt;
             margin-top: 6px;
+            table-layout: auto;
         }
         table.data th,
         table.data td {
             border: 0.5pt solid #000;
-            padding: 2px 4px;
+            padding: 3px 5px;
             text-align: center;
             vertical-align: middle;
+            word-wrap: break-word;
+            overflow: hidden;
         }
         table.data th {
             font-weight: bold;
             background: #fff;
+            font-size: 10pt;
+            padding: 4px 5px;
         }
-        table.data td.l { text-align: left; }
-        table.data td.r { text-align: right; }
+        table.data td.l { 
+            text-align: left; 
+            padding-left: 6px;
+        }
+        table.data td.r { 
+            text-align: right; 
+            padding-right: 6px;
+        }
         .b { font-weight: bold; }
 
         /* Lampiran title */
         .lampiran-title {
             text-align: center;
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 12pt;
             margin-top: 10px;
+            margin-bottom: 8px;
             line-height: 1.6;
+        }
+        
+        /* Landscape page specific styling */
+        .page.lampiran {
+            page-break-before: always;
+        }
+        .page.lampiran table.data {
+            width: 100%;
+        }
+        .page.lampiran table.data th,
+        .page.lampiran table.data td {
+            white-space: normal;
+            line-height: 1.3;
         }
 
         /* TTD area */
         .ttd-area {
             margin-top: 16px;
-            font-size: 9pt;
+            font-size: 12pt;
         }
         .ttd-area table { width: 100%; }
         .ttd-area td {
@@ -163,7 +195,21 @@
 
         @media print {
             .no-print { display: none !important; }
-            body { margin: 0; }
+            body { 
+                margin: 0;
+                width: 100%;
+            }
+            .page {
+                page-break-after: always;
+                width: 100%;
+            }
+            .page.lampiran {
+                page: lampiran;
+            }
+            table.data {
+                width: 100%;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -212,7 +258,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el watumalang08@gmail.com
+                Pos-el: watumalang08@gmail.com</a>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -274,18 +320,18 @@
             <thead>
                 <tr>
                     <th style="width:30px;">No.</th>
-                    <th>NAMA REK</th>
+                    <th style="width:auto">NAMA REK</th>
                     <th style="width:110px;">Nomor Rek</th>
                     <th style="width:80px;">KET</th>
-                    <th style="width:120px;">Jumlah</th>
+                    <th style="width:100px;">Jumlah</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td class="l">Gaji bersih masuk rek (daft terlamp)</td>
+                    <td class="l">Gaji bersih masuk rek <i>(daftar terlampir)</i></td>
                     <td>{{ $REK_GAJI }}</td>
-                    <td>RP/Gaji</td>
+                    <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersih) }}</td>
                 </tr>
                 <tr>
@@ -347,7 +393,7 @@
     {{-- ============================================================ --}}
     {{-- PNS PAGE 2: LAMPIRAN DATA                                    --}}
     {{-- ============================================================ --}}
-    <div class="page">
+    <div class="page lampiran">
         <div class="lampiran-title">
             DAFTAR PENERIMAAN GAJI PNS<br>
             {{ strtoupper($gaj->nama_satker) }}<br>
@@ -358,15 +404,15 @@
             <thead>
                 <tr>
                     <th rowspan="2" style="width:30px;">NO</th>
-                    <th rowspan="2">NAMA</th>
-                    <th rowspan="2" style="width:100px;">NO REKENING</th>
+                    <th rowspan="2" style="width:220px;">NAMA</th>
+                    <th rowspan="2" style="width:110px;">NO REKENING</th>
                     <th rowspan="2" style="width:100px;">GAJI BRUTO</th>
                     <th colspan="2">POT LAINYA</th>
                     <th rowspan="2" style="width:100px;">GAJI BERSIH</th>
                 </tr>
                 <tr>
-                    <th style="width:80px;">BAZNAS</th>
-                    <th style="width:80px;">DKK KORPRI</th>
+                    <th style="width:45px;">BAZNAS</th>
+                    <th style="width:45px;">DKK KORPRI</th>
                 </tr>
             </thead>
             <tbody>
@@ -429,7 +475,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el watumalang08@gmail.com
+                Pos-el: watumalang08@gmail.com</a>
             </div>
         </div>
         <div class="kop-line"></div>
@@ -448,7 +494,7 @@
             <tr>
                 <td class="label">Lampiran</td>
                 <td class="sep">:</td>
-                <td>1 (satu) Lembar</td>
+                <td>2 (dua) Lembar</td>
             </tr>
             <tr>
                 <td class="label">Perihal</td>
@@ -500,9 +546,9 @@
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td class="l">Gaji bersih masuk rek Bank Jateng (daft terlamp)</td>
+                    <td class="l">Gaji bersih masuk rek Bank Jateng <i>(daftar terlampir)</i></td>
                     <td>{{ $REK_GAJI }}</td>
-                    <td>RP/Gaji</td>
+                    <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihJateng) }}</td>
                 </tr>
                 @if (count($rowsWonosobo) > 0)
@@ -510,7 +556,7 @@
                     <td>2</td>
                     <td class="l">Gaji bersih transfer ke Bank Wonosobo</td>
                     <td>-</td>
-                    <td>RP/Gaji</td>
+                    <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
                 </tr>
                 @endif
@@ -574,7 +620,7 @@
     {{-- ============================================================ --}}
     {{-- PPPK PAGE 2: LAMPIRAN BANK JATENG                            --}}
     {{-- ============================================================ --}}
-    <div class="page">
+    <div class="page lampiran">
         <div class="lampiran-title">
             DAFTAR PENERIMAAN GAJI PPPK — BANK JATENG<br>
             {{ strtoupper($gaj->nama_satker) }}<br>
@@ -584,17 +630,17 @@
         <table class="data">
             <thead>
                 <tr>
-                    <th rowspan="2" style="width:25px;">NO</th>
-                    <th rowspan="2">NAMA</th>
-                    <th rowspan="2" style="width:90px;">BANK PENERIMA</th>
-                    <th rowspan="2" style="width:95px;">NO REKENING</th>
-                    <th rowspan="2" style="width:90px;">GAJI BRUTO</th>
+                    <th rowspan="2" style="width:30px;">NO</th>
+                    <th rowspan="2" style="width:220px;">NAMA</th>
+                    <th rowspan="2" style="width:110px;">BANK PENERIMA</th>
+                    <th rowspan="2" style="width:110px;">NO REKENING</th>
+                    <th rowspan="2" style="width:100px;">GAJI BRUTO</th>
                     <th colspan="2">POT LAINYA</th>
-                    <th rowspan="2" style="width:90px;">GAJI BERSIH</th>
+                    <th rowspan="2" style="width:100px;">GAJI BERSIH</th>
                 </tr>
                 <tr>
-                    <th style="width:70px;">BAZNAS</th>
-                    <th style="width:70px;">DKK KORPRI</th>
+                    <th style="width:45px;">BAZNAS</th>
+                    <th style="width:45px;">DKK KORPRI</th>
                 </tr>
             </thead>
             <tbody>
@@ -644,6 +690,81 @@
         </div>
     </div>
 
+    {{-- ============================================================ --}}
+    {{-- PPPK PAGE 2B: LAMPIRAN BANK WONOSOBO (untuk surat Jateng)   --}}
+    {{-- ============================================================ --}}
+    @if (count($rowsWonosobo) > 0)
+    <div class="page lampiran">
+        <div class="lampiran-title">
+            DAFTAR PENERIMAAN GAJI PPPK — BANK WONOSOBO<br>
+            {{ strtoupper($gaj->nama_satker) }}<br>
+            BULAN {{ strtoupper($bulanNama) }} {{ $gaj->tahun }}
+        </div>
+
+        <table class="data">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="width:30px;">NO</th>
+                    <th rowspan="2" style="width:220px;">NAMA</th>
+                    <th rowspan="2" style="width:110px;">BANK PENERIMA</th>
+                    <th rowspan="2" style="width:110px;">NO REKENING</th>
+                    <th rowspan="2" style="width:100px;">GAJI BRUTO</th>
+                    <th colspan="2">POT LAINYA</th>
+                    <th rowspan="2" style="width:100px;">GAJI BERSIH</th>
+                </tr>
+                <tr>
+                    <th style="width:45px;">BAZNAS</th>
+                    <th style="width:45px;">DKK KORPRI</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($rowsWonosobo as $i => $row)
+                <tr>
+                    <td>{{ $i + 1 }}</td>
+                    <td class="l">{{ $row['nama'] }}</td>
+                    <td>Bank Wonosobo</td>
+                    <td>{{ $row['no_rekening'] }}</td>
+                    <td class="r">{{ $rp($row['bruto']) }}</td>
+                    <td class="r">{{ $rp($row['baznas']) }}</td>
+                    <td class="r">{{ $rp($row['korpri']) }}</td>
+                    <td class="r">{{ $rp($row['bersih']) }}</td>
+                </tr>
+                @endforeach
+                <tr class="b">
+                    <td colspan="4"><strong>JUMLAH</strong></td>
+                    <td class="r b"><strong>{{ $rp($sumBrutoWonosobo) }}</strong></td>
+                    <td class="r b"><strong>{{ $rp($sumBaznasWonosobo) }}</strong></td>
+                    <td class="r b"><strong>{{ $rp($sumKorpriWonosobo) }}</strong></td>
+                    <td class="r b"><strong>{{ $rp($sumBersihWonosobo) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        {{-- TTD --}}
+        <div class="ttd-area">
+            <table>
+                <tr>
+                    <td style="width:50%;"></td>
+                    <td style="width:50%;">Mengetahui,</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>&nbsp;{{ $jabatanCamat }}</td>
+                </tr>
+                <tr style="height:50px;"><td></td><td></td></tr>
+                <tr>
+                    <td></td>
+                    <td><span class="name">{{ $namaCamat }}</span></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>{{ $nipCamat }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    @endif
+
     @if (count($rowsWonosobo) > 0)
     {{-- ============================================================ --}}
     {{-- PPPK PAGE 3: SURAT BANK WONOSOBO                             --}}
@@ -658,7 +779,7 @@
                 Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
                 Telpon ( 0286 ) 3304957<br>
                 Laman: kecamatanwatumalang.wonosobokab.go.id<br>
-                Pos-el watumalang08@gmail.com
+                Pos-el: watumalang08@gmail.com
             </div>
         </div>
         <div class="kop-line"></div>
@@ -689,7 +810,7 @@
         {{-- Addressee --}}
         <div class="addressee">
             Yth. Direktur PT. BPR BANK WONOSOBO<br>
-            PERSERODA<br>
+            (PERSERODA)<br>
             di &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -<br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WONOSOBO
         </div>
@@ -729,9 +850,9 @@
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td class="l">PT BPR BANK WONOSOBO PERSERODA (daft terlamp)</td>
+                    <td class="l">PT BPR BANK WONOSOBO (PERSERODA) <i>(daftar terlampir)</i></td>
                     <td>-</td>
-                    <td>RP/Gaji</td>
+                    <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
                 </tr>
                 <tr class="b">
@@ -779,7 +900,7 @@
     {{-- ============================================================ --}}
     {{-- PPPK PAGE 4: LAMPIRAN BANK WONOSOBO                          --}}
     {{-- ============================================================ --}}
-    <div class="page">
+    <div class="page lampiran">
         <div class="lampiran-title">
             DAFTAR PENERIMAAN GAJI PPPK — BANK WONOSOBO<br>
             {{ strtoupper($gaj->nama_satker) }}<br>
@@ -789,17 +910,17 @@
         <table class="data">
             <thead>
                 <tr>
-                    <th rowspan="2" style="width:25px;">NO</th>
-                    <th rowspan="2">NAMA</th>
-                    <th rowspan="2" style="width:90px;">BANK PENERIMA</th>
-                    <th rowspan="2" style="width:95px;">NO REKENING</th>
-                    <th rowspan="2" style="width:90px;">GAJI BRUTO</th>
+                    <th rowspan="2" style="width:40px;">NO</th>
+                    <th rowspan="2" style="width:220px;">NAMA</th>
+                    <th rowspan="2" style="width:110px;">BANK PENERIMA</th>
+                    <th rowspan="2" style="width:110px;">NO REKENING</th>
+                    <th rowspan="2" style="width:100px;">GAJI BRUTO</th>
                     <th colspan="2">POT LAINYA</th>
-                    <th rowspan="2" style="width:90px;">GAJI BERSIH</th>
+                    <th rowspan="2" style="width:100px;">GAJI BERSIH</th>
                 </tr>
                 <tr>
-                    <th style="width:70px;">BAZNAS</th>
-                    <th style="width:70px;">DKK KORPRI</th>
+                    <th style="width:45px;">BAZNAS</th>
+                    <th style="width:45px;">DKK KORPRI</th>
                 </tr>
             </thead>
             <tbody>
@@ -851,7 +972,7 @@
     @endif
     @endif
 
-    <script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
         const tglInput = document.getElementById('tglCetak');
         const tglLabels = document.querySelectorAll('.tgl-cetak-label');
@@ -859,14 +980,16 @@
         function updateTglLabel() {
             const d = tglInput.valueAsDate ? new Date(tglInput.value + 'T00:00:00') : new Date();
             const text = 'Wonosobo, ' + d.getDate() + ' ' + bulanNames[d.getMonth()] + ' ' + d.getFullYear();
-            tglLabels.forEach(el => el.textContent = text);
+            tglLabels.forEach(label => {
+                label.textContent = text;
+            });
         }
 
-        // Default: hari terakhir bulan gaji
-        const y = {{ $gaj->tahun }}, m = {{ $gaj->bulan }};
-        const lastDay = new Date(y, m, 0);
-        tglInput.value = lastDay.toISOString().slice(0, 10);
+        // Set default date to today
+        tglInput.value = new Date().toISOString().slice(0, 10);
         updateTglLabel();
+        
+        // Update when date changes
         tglInput.addEventListener('change', updateTglLabel);
     </script>
 </body>
