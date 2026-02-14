@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Gaj;
+use App\Models\Personil;
 use App\Services\GajLaporanService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -13,12 +14,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class GajRincianExport
 {
     protected GajLaporanService $svc;
-
-    // ── Pejabat TTD ──────────────────────────────────────────────────────────
-    private const NAMA_BENDAHARA       = 'DEWI ASMARANI H., A.Md';
-    private const NIP_BENDAHARA        = 'NIP. 19800101 200801 2 001';
-    private const NAMA_PEMBANTU        = 'SOLEH';
-    private const NIP_PEMBANTU         = 'NIP. 19710815 201212 1 001';
 
     private const BULAN_NAMES = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -261,15 +256,18 @@ class GajRincianExport
         $ttdRow++;
         $sheet->setCellValue("G{$ttdRow}", 'Untuk Urusan Gaji');
 
+        $bendahara     = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+        $bendaharaGaji = Personil::where('jabatan_lainnya', 'Bendahara Gaji')->first();
+
         $ttdRow += 3; // skip space for signature
-        $sheet->setCellValue("B{$ttdRow}", self::NAMA_BENDAHARA);
+        $sheet->setCellValue("B{$ttdRow}", $bendahara->nama ?? '—');
         $sheet->getStyle("B{$ttdRow}")->getFont()->setBold(true)->setUnderline(true);
-        $sheet->setCellValue("G{$ttdRow}", self::NAMA_PEMBANTU);
+        $sheet->setCellValue("G{$ttdRow}", $bendaharaGaji->nama ?? '—');
         $sheet->getStyle("G{$ttdRow}")->getFont()->setBold(true)->setUnderline(true);
 
         $ttdRow++;
-        $sheet->setCellValue("B{$ttdRow}", self::NIP_BENDAHARA);
-        $sheet->setCellValue("G{$ttdRow}", self::NIP_PEMBANTU);
+        $sheet->setCellValue("B{$ttdRow}", 'NIP. ' . ($bendahara->nip ?? ''));
+        $sheet->setCellValue("G{$ttdRow}", 'NIP. ' . ($bendaharaGaji->nip ?? ''));
     }
 
     /**

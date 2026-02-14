@@ -12,6 +12,7 @@ use App\Http\Controllers\FilamentThemeController;
 use App\Http\Controllers\YieldPanelPreferenceController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\BanprovVerificationController;
+use App\Http\Controllers\BkuController;
 use App\Http\Controllers\GajExportController;
 use App\Http\Controllers\SpjController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -111,4 +112,9 @@ Route::middleware('auth:personil')->group(function () {
         ->name('gaj.export.jml-peg');
     Route::get('/admin/gajs/{gaj}/export/pemindahbukuan', [GajExportController::class, 'pemindahbukuan'])
         ->name('gaj.export.pemindahbukuan');
+
+    Route::get('/admin/bku/{bku}/cetak', [BkuController::class, 'cetak'])
+        ->name('bku.cetak');
+    Route::get('/admin/bku/{bku}/pemindahbukuan', [BkuController::class, 'pemindahbukuan'])
+        ->name('bku.pemindahbukuan');
 });

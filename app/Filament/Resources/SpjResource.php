@@ -21,10 +21,12 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Support\RawJs;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -151,7 +153,7 @@ class SpjResource extends Resource
                         ->searchable()
                         ->live()
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                            self::recalculateTax($state, (int) $get('jumlah'), $set);
+                            self::recalculateTax($state, self::parseRupiah($get('jumlah')), $set);
                         })
                         ->nullable()
                         ->helperText('Hanya menampilkan kode rekening paling detail dari DPA yang sudah diimport.')
@@ -205,7 +207,9 @@ class SpjResource extends Resource
                                 ]);
                         })
                         ->searchable()
-                        ->nullable(),
+                        ->nullable()
+                        ->default(fn () => Personil::where('jabatan_lainnya', 'PPTK')->value('id'))
+                        ->hidden(),
 
                     TextInput::make('nomor_kwitansi')
                         ->label('Nomor Kwitansi')
@@ -226,15 +230,17 @@ class SpjResource extends Resource
 
                     TextInput::make('jumlah')
                         ->label('Jumlah Kotor (Rp)')
-                        ->numeric()
+                        ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                        ->stripCharacters('.')
+                        ->inputMode('numeric')
                         ->nullable()
                         ->live(debounce: 600)
                         ->afterStateUpdated(function ($state, Set $set, Get $get) {
-                            self::recalculateTax($get('dpa_rincian_belanja_id'), (int) $state, $set);
+                            self::recalculateTax($get('dpa_rincian_belanja_id'), self::parseRupiah($state), $set);
                         })
-                        ->helperText('Masukkan angka tanpa titik/koma.')
                         ->rules([
                             fn (Get $get, ?Spj $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                $value = (int) str_replace('.', '', (string) $value);
                                 if (! $value || ! $get('dpa_rincian_belanja_id')) {
                                     return;
                                 }
@@ -243,16 +249,13 @@ class SpjResource extends Resource
                                     return;
                                 }
 
-                                // Pagu tidak pernah berubah; sisa = pagu - total SPJ.
-                                // Saat edit, kembalikan jumlah lama ke sisa agar pagu tidak
-                                // dihitung dua kali (jika kode rekening tidak diganti).
                                 $oldJumlah = 0;
                                 if ($record && (int) $record->dpa_rincian_belanja_id === (int) $get('dpa_rincian_belanja_id')) {
                                     $oldJumlah = (int) $record->jumlah;
                                 }
 
                                 $sisa = $rincian->sisa_anggaran + $oldJumlah;
-                                if ((int) $value > $sisa) {
+                                if ($value > $sisa) {
                                     $sisaFormat = 'Rp ' . number_format($sisa, 0, ',', '.');
                                     $fail("Jumlah melebihi sisa anggaran rekening ini ({$sisaFormat}).");
                                 }
@@ -276,36 +279,45 @@ class SpjResource extends Resource
                 ->schema([
                     TextInput::make('ppn')
                         ->label('PPn (Rp)')
-                        ->numeric()
+                        ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                        ->stripCharacters('.')
+                        ->inputMode('numeric')
                         ->default(0)
                         ->helperText('Pajak Pertambahan Nilai'),
 
                     TextInput::make('pph21')
                         ->label('PPh 21 (Rp)')
-                        ->numeric()
+                        ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                        ->stripCharacters('.')
+                        ->inputMode('numeric')
                         ->default(0)
                         ->helperText('Honorarium / penghasilan orang pribadi'),
 
                     TextInput::make('pph22')
                         ->label('PPh 22 (Rp)')
-                        ->numeric()
+                        ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                        ->stripCharacters('.')
+                        ->inputMode('numeric')
                         ->default(0)
                         ->helperText('Pembelian barang'),
 
                     TextInput::make('pph23')
                         ->label('PPh 23 (Rp)')
-                        ->numeric()
+                        ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                        ->stripCharacters('.')
+                        ->inputMode('numeric')
                         ->default(0)
                         ->helperText('Jasa / sewa'),
 
                     Placeholder::make('info_pajak')
                         ->label('Ringkasan Pajak')
                         ->content(function (Get $get): HtmlString {
-                            $jumlah = (int) $get('jumlah');
-                            $ppn = (int) $get('ppn');
-                            $pph21 = (int) $get('pph21');
-                            $pph22 = (int) $get('pph22');
-                            $pph23 = (int) $get('pph23');
+                            $rp = fn ($v) => (int) str_replace('.', '', (string) $v);
+                            $jumlah = $rp($get('jumlah'));
+                            $ppn = $rp($get('ppn'));
+                            $pph21 = $rp($get('pph21'));
+                            $pph22 = $rp($get('pph22'));
+                            $pph23 = $rp($get('pph23'));
                             $totalPajak = $ppn + $pph21 + $pph22 + $pph23;
                             $bersih = $jumlah - $totalPajak;
 
@@ -323,7 +335,69 @@ class SpjResource extends Resource
                 ])
                 ->columns(4)
                 ->collapsible(),
+
+            Section::make('Penerima')
+                ->description('Data penerima pembayaran. Jika kosong atau lebih dari 1 orang, kwitansi akan menampilkan "Terlampir".')
+                ->schema([
+                    Repeater::make('penerimas')
+                        ->relationship()
+                        ->schema([
+                            Select::make('personil_id')
+                                ->label('Personil Internal')
+                                ->options(fn () => Personil::query()
+                                    ->orderBy('nama')
+                                    ->get()
+                                    ->mapWithKeys(fn (Personil $p) => [$p->id => $p->nama . ($p->jabatan ? ' — ' . $p->jabatan : '')]))
+                                ->searchable()
+                                ->nullable()
+                                ->placeholder('Kosongkan jika pihak luar')
+                                ->live()
+                                ->afterStateUpdated(function ($state, Set $set) {
+                                    if ($state) {
+                                        $p = Personil::find($state);
+                                        if ($p) {
+                                            $set('nama', $p->nama);
+                                            $set('no_rekening', $p->no_rekening);
+                                            $set('nama_bank', Personil::BANK_OPTIONS[$p->kode_bank] ?? '');
+                                        }
+                                    }
+                                })
+                                ->columnSpanFull(),
+
+                            TextInput::make('nama')
+                                ->label('Nama Penerima')
+                                ->required()
+                                ->maxLength(255),
+
+                            TextInput::make('no_rekening')
+                                ->label('No Rekening')
+                                ->maxLength(30)
+                                ->nullable(),
+
+                            TextInput::make('nama_bank')
+                                ->label('Bank')
+                                ->maxLength(50)
+                                ->nullable(),
+
+                            TextInput::make('jumlah')
+                                ->label('Jumlah (Rp)')
+                                ->mask(RawJs::make("\$money(\$input, ',', '.', 0)"))
+                                ->stripCharacters('.')
+                                ->inputMode('numeric')
+                                ->required(),
+                        ])
+                        ->columns(4)
+                        ->defaultItems(0)
+                        ->addActionLabel('Tambah Penerima')
+                        ->reorderable(false),
+                ])
+                ->collapsible(),
         ]);
+    }
+
+    protected static function parseRupiah(mixed $value): int
+    {
+        return (int) str_replace('.', '', (string) $value);
     }
 
     protected static function recalculateTax(?int $rincianId, int $jumlah, Set $set): void
@@ -352,7 +426,8 @@ class SpjResource extends Resource
         return $table
             ->query(
                 Spj::query()
-                    ->with(['suratKeluar.requester', 'personil', 'dpaRincianBelanja.subKegiatan'])
+                    ->with(['suratKeluar.requester', 'personil', 'dpaRincianBelanja.subKegiatan', 'bkus'])
+                    ->withCount(['penerimas'])
             )
             ->defaultSort(function (Builder $query): Builder {
                 return $query
@@ -366,26 +441,34 @@ class SpjResource extends Resource
                     ->label('Seksi')
                     ->formatStateUsing(fn ($state) => $state ? strtoupper($state) : '-')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('personil.nama')
                     ->label('PPTK / Pemohon')
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('nomor_kwitansi')
                     ->label('Nomor Kwitansi')
                     ->searchable()
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('tanggal')
                     ->label('Tanggal')
                     ->date('d M Y')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('dpaRincianBelanja.subKegiatan.kode')
+                    ->label('Sub Kegiatan')
+                    ->placeholder('-')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('tahun')
                     ->label('Tahun')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('uraian')
                     ->label('Uraian')
@@ -407,10 +490,15 @@ class SpjResource extends Resource
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('dpaRincianBelanja.subKegiatan.kode')
-                    ->label('Sub Kegiatan DPA')
+                Tables\Columns\TextColumn::make('yang_berhak_menerima')
+                    ->label('Penerima')
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('bkus.nama_label')
+                    ->label('BKU')
+                    ->placeholder('')
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('personil_id')

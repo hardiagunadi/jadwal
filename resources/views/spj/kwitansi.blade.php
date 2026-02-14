@@ -297,7 +297,7 @@
         <tr>
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
-            <td colspan="6" class="br c sm" style="padding:1px 3px;">Yang berhak menerima</td>
+            <td colspan="6" class="br c sm" style="padding:1px 3px;">Yang berhak menerima:</td>
             <td colspan="4" style="padding:1px 3px;">4.&nbsp;PPh 23</td>
             <td colspan="1" style="padding:1px 3px;">Rp.</td>
             <td colspan="3" class="br bb r" style="padding:1px 3px;">{{ $rp($pph23) }}</td>
@@ -317,7 +317,7 @@
         <tr>
             <td colspan="5" class="bl"></td>
             <td colspan="1"></td>
-            <td colspan="6" class="br c b u vb" style="padding:1px 3px;">Terlampir</td>
+            <td colspan="6" class="br c b u vb" style="padding:1px 3px;">{{ $spj->yang_berhak_menerima }}</td>
             <td colspan="8" class="br c sm" style="padding:1px 3px;">
                 Pengeluaran / pembelian dilakukan berdasarkan :
             </td>

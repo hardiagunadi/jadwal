@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Gaj;
 use App\Models\GajPegawai;
+use App\Models\Personil;
 use Illuminate\Support\Facades\DB;
 
 class GajImportService
@@ -93,7 +94,15 @@ class GajImportService
             }
 
             foreach ($pegawais as $p) {
+                $noRekening = $p['no_rekening'] ?? null;
+                unset($p['no_rekening']);
+
                 GajPegawai::create(array_merge(['gaj_id' => $gaj->id], $p));
+
+                // Sync no_rekening ke personil
+                if ($noRekening && ! empty($p['nip'])) {
+                    Personil::where('nip', $p['nip'])->update(['no_rekening' => $noRekening]);
+                }
             }
 
             return [

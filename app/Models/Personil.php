@@ -22,11 +22,16 @@ class Personil extends Authenticatable implements FilamentUser, HasAvatar, HasNa
     use Notifiable;
     use HasApiTokens;
 
+    public const BANK_OPTIONS = [
+        'jateng'   => 'Bank Jateng',
+        'wonosobo' => 'Bank Wonosobo',
+    ];
+
     protected $table = 'personils';
 
     protected $fillable = [
         'nama',
-		'nip', 
+		'nip',
         'photo_url',
         'jabatan',
         'jabatan_akronim',
@@ -35,6 +40,8 @@ class Personil extends Authenticatable implements FilamentUser, HasAvatar, HasNa
         'golongan',
         'kategori',
         'no_wa',
+        'no_rekening',
+        'kode_bank',
         'keterangan',
         'password',
         'role',

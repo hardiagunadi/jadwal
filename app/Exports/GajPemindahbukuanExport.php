@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\Gaj;
 use App\Models\GajKorpri;
+use App\Models\Personil;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -17,13 +18,6 @@ class GajPemindahbukuanExport
     private const REK_GAJI   = '9023999021';
     private const REK_BAZNAS = '2023062148';
     private const REK_KORPRI = '10020100947';
-
-    // ── Pejabat TTD ──────────────────────────────────────────────────────────
-    private const NAMA_CAMAT   = 'SUBUH ONI WIYONO, SE., MM.';
-    private const NIP_CAMAT    = 'NIP. 19680331 199603 1 007';
-    private const JABATAN_CAMAT = 'Plt. Camat Watumalang';
-    private const NAMA_PENYIAP = 'SOLEH';
-    private const NIP_PENYIAP  = 'NIP. 19710815 201212 1 001';
 
     private const BULAN_NAMES = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -351,11 +345,13 @@ class GajPemindahbukuanExport
         $sheet->getStyle("A{$r}:C{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── TTD ─────────────────────────────────────────────────────────────
+        $pa = Personil::whereIn('jabatan_lainnya', ['PA', 'KPA'])->first();
+
         $ttdRow = $r + 3;
         $sheet->setCellValue('F' . $ttdRow, 'Mengetahui,');
-        $sheet->setCellValue('F' . ($ttdRow + 1), '  ' . self::JABATAN_CAMAT);
-        $sheet->setCellValue('F' . ($ttdRow + 5), self::NAMA_CAMAT);
-        $sheet->setCellValue('F' . ($ttdRow + 6), self::NIP_CAMAT);
+        $sheet->setCellValue('F' . ($ttdRow + 1), '  ' . ($pa->jabatan ?? 'Camat Watumalang'));
+        $sheet->setCellValue('F' . ($ttdRow + 5), $pa->nama ?? '—');
+        $sheet->setCellValue('F' . ($ttdRow + 6), 'NIP. ' . ($pa->nip ?? ''));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -746,7 +742,7 @@ class GajPemindahbukuanExport
         foreach ($rows as $idx => $row) {
             $sheet->setCellValue('A' . $r, $idx + 1);
             $sheet->setCellValue('B' . $r, $row['nama']);
-            $sheet->setCellValue('C' . $r, 'Bank Wonosobo');
+            $sheet->setCellValue('C' . $r, Personil::BANK_OPTIONS[$row['kode_bank'] ?? ''] ?? '-');
             $sheet->setCellValue('D' . $r, $row['no_rekening']);
             $sheet->setCellValue('E' . $r, $row['bruto']);
             $sheet->setCellValue('F' . $r, $row['baznas']);
@@ -779,11 +775,13 @@ class GajPemindahbukuanExport
         $sheet->getStyle("A{$r}:C{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── TTD ─────────────────────────────────────────────────────────────
+        $pa = Personil::whereIn('jabatan_lainnya', ['PA', 'KPA'])->first();
+
         $ttdRow = $r + 3;
         $sheet->setCellValue('G' . $ttdRow, 'Mengetahui,');
-        $sheet->setCellValue('G' . ($ttdRow + 1), ' ' . self::JABATAN_CAMAT);
-        $sheet->setCellValue('G' . ($ttdRow + 5), self::NAMA_CAMAT);
-        $sheet->setCellValue('G' . ($ttdRow + 6), self::NIP_CAMAT);
+        $sheet->setCellValue('G' . ($ttdRow + 1), ' ' . ($pa->jabatan ?? 'Camat Watumalang'));
+        $sheet->setCellValue('G' . ($ttdRow + 5), $pa->nama ?? '—');
+        $sheet->setCellValue('G' . ($ttdRow + 6), 'NIP. ' . ($pa->nip ?? ''));
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -800,6 +798,7 @@ class GajPemindahbukuanExport
         $korpriMap = GajKorpri::pluck('jumlah', 'nip');
 
         return $gaj->pegawais()
+            ->with('personil')
             ->orderBy('no_urut')
             ->get()
             ->map(function ($p) use ($korpriMap) {
@@ -810,7 +809,8 @@ class GajPemindahbukuanExport
 
                 return [
                     'nama'        => $p->nama,
-                    'no_rekening' => $p->no_rekening,
+                    'no_rekening' => $p->personil->no_rekening ?? '',
+                    'kode_bank'   => $p->personil->kode_bank ?? '',
                     'bruto'       => $bruto,
                     'baznas'      => $baznas,
                     'korpri'      => $korpri,
@@ -881,6 +881,13 @@ class GajPemindahbukuanExport
      */
     private function setTtdSurat($sheet, int $startRow, string $lastCol): void
     {
+        $pa            = Personil::whereIn('jabatan_lainnya', ['PA', 'KPA'])->first();
+        $bendaharaGaji = Personil::where('jabatan_lainnya', 'Bendahara Gaji')->first();
+
+        $jabatanPa = $pa->jabatan ?? 'Camat Watumalang';
+        $namaPa    = $pa->nama ?? '—';
+        $nipPa     = 'NIP. ' . ($pa->nip ?? '');
+
         $rMengetahui = $startRow;
         $rJabatan    = $startRow + 1;
         $rKab        = $startRow + 2;
@@ -892,17 +899,17 @@ class GajPemindahbukuanExport
         $sheet->setCellValue("A{$rMengetahui}", 'Mengetahui,');
 
         $sheet->mergeCells("A{$rJabatan}:E{$rJabatan}");
-        $sheet->setCellValue("A{$rJabatan}", self::JABATAN_CAMAT);
+        $sheet->setCellValue("A{$rJabatan}", $jabatanPa);
 
         $sheet->mergeCells("A{$rKab}:E{$rKab}");
         $sheet->setCellValue("A{$rKab}", 'Kabupaten Wonosobo');
 
         $sheet->mergeCells("A{$rNama}:E{$rNama}");
-        $sheet->setCellValue("A{$rNama}", self::NAMA_CAMAT);
+        $sheet->setCellValue("A{$rNama}", $namaPa);
         $sheet->getStyle("A{$rNama}")->getFont()->setBold(true)->setUnderline(true);
 
         $sheet->mergeCells("A{$rNip}:E{$rNip}");
-        $sheet->setCellValue("A{$rNip}", self::NIP_CAMAT);
+        $sheet->setCellValue("A{$rNip}", $nipPa);
 
         // Right side: Penyiap Dokumen (merged H:K)
         $sheet->mergeCells("H{$rMengetahui}:{$lastCol}{$rMengetahui}");
@@ -912,11 +919,11 @@ class GajPemindahbukuanExport
         $sheet->mergeCells("H{$rKab}:{$lastCol}{$rKab}");
 
         $sheet->mergeCells("H{$rNama}:{$lastCol}{$rNama}");
-        $sheet->setCellValue("H{$rNama}", self::NAMA_PENYIAP);
+        $sheet->setCellValue("H{$rNama}", $bendaharaGaji->nama ?? '—');
         $sheet->getStyle("H{$rNama}")->getFont()->setBold(true)->setUnderline(true);
 
         $sheet->mergeCells("H{$rNip}:{$lastCol}{$rNip}");
-        $sheet->setCellValue("H{$rNip}", self::NIP_PENYIAP);
+        $sheet->setCellValue("H{$rNip}", 'NIP. ' . ($bendaharaGaji->nip ?? ''));
 
         // Center both sides
         $sheet->getStyle("A{$rMengetahui}:E{$rNip}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);

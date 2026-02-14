@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Gaj;
+use App\Models\Personil;
 use App\Services\GajLaporanService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -13,12 +14,6 @@ use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 class GajPerbedaanExport
 {
     protected GajLaporanService $svc;
-
-    // ── Pejabat TTD ──────────────────────────────────────────────────────────
-    private const NAMA_BENDAHARA = 'DEWI ASMARANI H., A.Md';
-    private const NIP_BENDAHARA  = 'NIP. 19930702 202012 2 010';
-    private const NAMA_PENYIAP   = 'SOLEH';
-    private const NIP_PENYIAP    = 'NIP. 19710815 201212 1 001';
 
     // PNS golongan rows
     protected array $PNS_ROWS = [
@@ -275,20 +270,22 @@ class GajPerbedaanExport
             ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         // ── TTD Section ────────────────────────────────────────────────────
+        $bendahara     = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+        $bendaharaGaji = Personil::where('jabatan_lainnya', 'Bendahara Gaji')->first();
+
         $ttdStart = $lastDataRow + 3;
 
         $sheet->setCellValue("B" . ($ttdStart + 2), 'Bendahara Pengeluaran');
-        $sheet->setCellValue("R" . ($ttdStart), self::NAMA_PENYIAP);
         $sheet->setCellValue("R" . ($ttdStart + 2), 'Pembantu Bendahara Pengeluaran');
         $sheet->setCellValue("R" . ($ttdStart + 3), 'Untuk Urusan Gaji');
 
-        $sheet->setCellValue("B" . ($ttdStart + 6), self::NAMA_BENDAHARA);
+        $sheet->setCellValue("B" . ($ttdStart + 6), $bendahara->nama ?? '—');
         $sheet->getStyle("B" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
-        $sheet->setCellValue("B" . ($ttdStart + 7), self::NIP_BENDAHARA);
+        $sheet->setCellValue("B" . ($ttdStart + 7), 'NIP. ' . ($bendahara->nip ?? ''));
 
-        $sheet->setCellValue("R" . ($ttdStart + 6), self::NAMA_PENYIAP);
+        $sheet->setCellValue("R" . ($ttdStart + 6), $bendaharaGaji->nama ?? '—');
         $sheet->getStyle("R" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
-        $sheet->setCellValue("R" . ($ttdStart + 7), self::NIP_PENYIAP);
+        $sheet->setCellValue("R" . ($ttdStart + 7), 'NIP. ' . ($bendaharaGaji->nip ?? ''));
     }
 
     private function writeDataRow($sheet, int $row, ?int $no, string $label, string $ruang, array $lalu, array $now, bool $bold = false): void

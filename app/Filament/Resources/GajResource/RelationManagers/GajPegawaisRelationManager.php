@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources\GajResource\RelationManagers;
 
+use App\Models\Personil;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -248,8 +251,14 @@ class GajPegawaisRelationManager extends RelationManager
                     ->formatStateUsing($money)
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('no_rekening')
+                Tables\Columns\TextColumn::make('personil.no_rekening')
                     ->label('No Rekening')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('personil.kode_bank')
+                    ->label('Bank')
+                    ->formatStateUsing(fn ($state) => Personil::BANK_OPTIONS[$state] ?? '-')
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -275,6 +284,54 @@ class GajPegawaisRelationManager extends RelationManager
                         ->pluck('golongan', 'golongan')
                         ->filter()
                         ->toArray()),
+
+                Tables\Filters\SelectFilter::make('kode_bank')
+                    ->label('Bank')
+                    ->options(Personil::BANK_OPTIONS)
+                    ->query(fn ($query, array $data) => $data['value']
+                        ? $query->whereHas('personil', fn ($q) => $q->where('kode_bank', $data['value']))
+                        : $query),
+            ])
+            ->actions([
+                Action::make('setBank')
+                    ->label(fn (\App\Models\GajPegawai $record) => $record->personil?->kode_bank ? 'Edit Bank' : 'Set Bank')
+                    ->icon('heroicon-m-building-library')
+                    ->fillForm(fn (\App\Models\GajPegawai $record) => ['kode_bank' => $record->personil?->kode_bank])
+                    ->form([
+                        \Filament\Forms\Components\Select::make('kode_bank')
+                            ->label('Bank')
+                            ->options(Personil::BANK_OPTIONS)
+                            ->required(),
+                    ])
+                    ->action(function (\App\Models\GajPegawai $record, array $data) {
+                        Personil::where('nip', $record->nip)->update(['kode_bank' => $data['kode_bank']]);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Bank berhasil diset')
+                            ->body($record->nama . ' → ' . (Personil::BANK_OPTIONS[$data['kode_bank']] ?? $data['kode_bank']))
+                            ->success()
+                            ->send();
+                    }),
+            ])
+            ->bulkActions([
+                BulkAction::make('setBankBulk')
+                    ->label('Set Bank')
+                    ->icon('heroicon-m-building-library')
+                    ->form([
+                        \Filament\Forms\Components\Select::make('kode_bank')
+                            ->label('Bank')
+                            ->options(Personil::BANK_OPTIONS)
+                            ->required(),
+                    ])
+                    ->action(function (\Illuminate\Support\Collection $records, array $data) {
+                        $nips = $records->pluck('nip')->filter()->unique()->values();
+                        Personil::whereIn('nip', $nips)->update(['kode_bank' => $data['kode_bank']]);
+                        \Filament\Notifications\Notification::make()
+                            ->title('Bank berhasil diset')
+                            ->body($records->count() . ' pegawai → ' . (Personil::BANK_OPTIONS[$data['kode_bank']] ?? $data['kode_bank']))
+                            ->success()
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->paginated([25, 50, 100]);
     }

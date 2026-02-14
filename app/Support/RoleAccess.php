@@ -40,6 +40,7 @@ class RoleAccess
             'filament.admin.pages.verifikasi-banprov' => 'Verifikasi Banprov',
             'filament.admin.resources.dpa' => 'DPA (Dokumen Pelaksanaan Anggaran)',
             'filament.admin.resources.spj' => 'SPJ Kwitansi Dinas',
+            'filament.admin.resources.bku' => 'Daftar BKU',
             'filament.admin.resources.wa-inbox-messages' => 'Chat Masuk WA',
             'filament.admin.resources.surat-keluar' => 'Surat Keluar',
             'filament.admin.resources.surat-keputusan' => 'Surat Keputusan',

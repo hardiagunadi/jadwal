@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Spj extends Model
 {
@@ -42,9 +45,19 @@ class Spj extends Model
         return $this->belongsTo(Personil::class);
     }
 
-    public function dpaRincianBelanja()
+    public function dpaRincianBelanja(): BelongsTo
     {
         return $this->belongsTo(DpaRincianBelanja::class);
+    }
+
+    public function penerimas(): HasMany
+    {
+        return $this->hasMany(SpjPenerima::class);
+    }
+
+    public function bkus(): BelongsToMany
+    {
+        return $this->belongsToMany(Bku::class, 'bku_spj')->withPivot('created_at');
     }
 
     public function getTotalPajakAttribute(): int
@@ -60,5 +73,21 @@ class Spj extends Model
     public function getJumlahFormatAttribute(): string
     {
         return $this->jumlah ? number_format((int) $this->jumlah, 0, ',', '.') : '0';
+    }
+
+    public function getYangBerhakMenerimaAttribute(): string
+    {
+        $count = $this->penerimas_count ?? $this->penerimas()->count();
+
+        if ($count === 1) {
+            return $this->penerimas->first()->nama ?? 'Terlampir';
+        }
+
+        return 'Terlampir';
+    }
+
+    public function getSudahBkuAttribute(): bool
+    {
+        return ($this->bkus_count ?? $this->bkus()->count()) > 0;
     }
 }

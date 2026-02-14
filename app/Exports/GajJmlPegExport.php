@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Gaj;
+use App\Models\Personil;
 use App\Services\GajLaporanService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -13,10 +14,6 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class GajJmlPegExport
 {
     protected GajLaporanService $svc;
-
-    // ── TTD Constants ──────────────────────────────────────────────────────────
-    private const NAMA_BENDAHARA = 'DEWI ASMARANI H., A.Md';
-    private const NIP_BENDAHARA  = 'NIP. 19930702 202012 2 010';
 
     public function __construct()
     {
@@ -180,17 +177,19 @@ class GajJmlPegExport
         $sheet->setCellValue("D{$ttdRow3}", 'Untuk Urusan Gaji');
         $sheet->getStyle("D{$ttdRow3}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
+        $bendahara = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+
         // Names row (ttdStart + 5, i.e. R38 equivalent)
         $nameRow = $ttdStart + 5;
         $sheet->mergeCells("A{$nameRow}:B{$nameRow}");
-        $sheet->setCellValue("A{$nameRow}", self::NAMA_BENDAHARA);
+        $sheet->setCellValue("A{$nameRow}", $bendahara->nama ?? '—');
         $sheet->getStyle("A{$nameRow}")->getFont()->setBold(true)->setUnderline(true);
         $sheet->getStyle("A{$nameRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // NIP row (ttdStart + 6, i.e. R39 equivalent)
         $nipRow = $ttdStart + 6;
         $sheet->mergeCells("A{$nipRow}:B{$nipRow}");
-        $sheet->setCellValue("A{$nipRow}", self::NIP_BENDAHARA);
+        $sheet->setCellValue("A{$nipRow}", 'NIP. ' . ($bendahara->nip ?? ''));
         $sheet->getStyle("A{$nipRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 
@@ -332,17 +331,19 @@ class GajJmlPegExport
         $sheet->setCellValue("E{$ttdRow3}", 'Untuk Urusan Gaji');
         $sheet->getStyle("E{$ttdRow3}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
+        $bendahara = Personil::where('jabatan_lainnya', 'Bendahara Pengeluaran')->first();
+
         // Names row
         $nameRow = $ttdStart + 5;
         $sheet->mergeCells("A{$nameRow}:B{$nameRow}");
-        $sheet->setCellValue("A{$nameRow}", self::NAMA_BENDAHARA);
+        $sheet->setCellValue("A{$nameRow}", $bendahara->nama ?? '—');
         $sheet->getStyle("A{$nameRow}")->getFont()->setBold(true)->setUnderline(true);
         $sheet->getStyle("A{$nameRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // NIP row
         $nipRow = $ttdStart + 6;
         $sheet->mergeCells("A{$nipRow}:B{$nipRow}");
-        $sheet->setCellValue("A{$nipRow}", self::NIP_BENDAHARA);
+        $sheet->setCellValue("A{$nipRow}", 'NIP. ' . ($bendahara->nip ?? ''));
         $sheet->getStyle("A{$nipRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
     }
 

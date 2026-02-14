@@ -81,6 +81,16 @@ class PersonilForm
                             ->maxLength(20)
                             ->helperText('Nomor WA ini juga dipakai sebagai password login.'),
 
+                        Select::make('kode_bank')
+                            ->label('Bank')
+                            ->options(\App\Models\Personil::BANK_OPTIONS)
+                            ->native(false)
+                            ->placeholder('— pilih bank —'),
+
+                        TextInput::make('no_rekening')
+                            ->label('No Rekening')
+                            ->maxLength(30),
+
                         Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->rows(3),

@@ -50,7 +50,6 @@ class GajPegawai extends Model
         'jml_potongan',
         'pot_jkm',
         'jumlah_bersih',
-        'no_rekening',
     ];
 
     protected $casts = [
@@ -91,5 +90,10 @@ class GajPegawai extends Model
     public function gaj(): BelongsTo
     {
         return $this->belongsTo(Gaj::class, 'gaj_id');
+    }
+
+    public function personil(): BelongsTo
+    {
+        return $this->belongsTo(Personil::class, 'nip', 'nip');
     }
 }
