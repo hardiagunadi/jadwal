@@ -88,7 +88,7 @@
         </label>
         <button onclick="window.print()">Cetak / Simpan PDF</button>
         <a href="{{ route('gaj.excel.perbedaan', $gaj) }}" style="padding:3px 12px; background:#16a34a; color:#fff; border:none; border-radius:3px; cursor:pointer; font-size:8pt; text-decoration:none;">Unduh Excel</a>
-        <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
+        <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF atau Unduh File Excel.</span>
     </div>
 
     @php
@@ -115,7 +115,6 @@
         <tr>
             <th rowspan="3" style="width:22px;">No</th>
             <th rowspan="3" style="width:90px;">Golongan /<br>Ruang</th>
-            <th rowspan="3" style="width:30px;"></th>
             <th colspan="5">I. Bulan : {{ $bulanLaluLabel }}</th>
             <th colspan="5">II. Bulan : {{ $gaj->periode }}</th>
             <th colspan="10">III. PERBEDAAN</th>
@@ -153,7 +152,7 @@
         </tr>
         {{-- ══ Header Row 4: Column numbers ══ --}}
         <tr>
-            @for ($c = 1; $c <= 23; $c++)
+            @for ($c = 1; $c <= 22; $c++)
                 <th style="font-size:6pt; font-weight:normal;">{{ $c }}</th>
             @endfor
         </tr>
@@ -162,18 +161,18 @@
         @php
             $totLalu = ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
             $totNow  = ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
-            $rowNum  = 0;
+            $groupNumber = 1;  // Counter for golongan groups (I, II, III, IV)
         @endphp
 
         @foreach ($rows as $groupRoman => $golRows)
             @php
                 $groupLalu = ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
                 $groupNow  = ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
+                $isFirstRow = true;  // Flag to track first row of each group
             @endphp
 
             @foreach ($golRows as $gRow)
                 @php
-                    $rowNum++;
                     $lalu = $dataLalu[$gRow['key']] ?? ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
                     $now  = $dataNow[$gRow['key']]  ?? ['peg'=>0,'istri'=>0,'anak'=>0,'jiwa'=>0,'kotor'=>0];
                     $ruang = $isPns ? $gRow['key'] : ($gRow['ruang'] ?? '');
@@ -190,9 +189,8 @@
                     }
                 @endphp
                 <tr>
-                    <td>{{ $rowNum }}</td>
+                    <td>{{ $isFirstRow ? $groupNumber : '' }}</td>
                     <td class="l">{{ $gRow['label'] }}</td>
-                    <td>{{ $ruang }}</td>
                     <td>{{ $dash($lalu['peg']) }}</td>
                     <td>{{ $dash($lalu['istri']) }}</td>
                     <td>{{ $dash($lalu['anak']) }}</td>
@@ -214,6 +212,9 @@
                     <td class="r">{{ $dashRp($dKotor['t']) }}</td>
                     <td class="r">{{ $dashRp($dKotor['k']) }}</td>
                 </tr>
+                @php
+                    $isFirstRow = false;  // After first row, set to false
+                @endphp
             @endforeach
 
             {{-- Subtotal golongan --}}
@@ -228,11 +229,12 @@
                     $totLalu[$k] += $groupLalu[$k];
                     $totNow[$k]  += $groupNow[$k];
                 }
+                
+                $groupNumber++;  // Increment group number after each group
             @endphp
             <tr class="b">
                 <td></td>
                 <td class="l b">Jumlah Gol {{ $groupRoman }}</td>
-                <td></td>
                 <td class="b">{{ $dash($groupLalu['peg']) }}</td>
                 <td class="b">{{ $dash($groupLalu['istri']) }}</td>
                 <td class="b">{{ $dash($groupLalu['anak']) }}</td>
@@ -267,7 +269,6 @@
         <tr class="b">
             <td></td>
             <td class="l b">JUMLAH</td>
-            <td></td>
             <td class="b">{{ $dash($totLalu['peg']) }}</td>
             <td class="b">{{ $dash($totLalu['istri']) }}</td>
             <td class="b">{{ $dash($totLalu['anak']) }}</td>

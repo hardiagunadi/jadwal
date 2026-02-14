@@ -116,13 +116,13 @@ class GajPerbedaanExport
         $pageMargins->setLeft(1.28);
         $pageMargins->setRight(0.52);
 
-        // ── Column widths (A-W matching template) ──────────────────────────
+        // ── Column widths (A-V, optimized for content) ────────────────────
         $colWidths = [
-            'A' => 3.18,  'B' => 15.27, 'C' => 14.36, 'D' => 6,     'E' => 6.36,
-            'F' => 6.91,  'G' => 6.09,  'H' => 13.54, 'I' => 6,     'J' => 6.36,
-            'K' => 7,     'L' => 6.09,  'M' => 14.18, 'N' => 11,    'O' => 10,
-            'P' => 11,    'Q' => 10.54, 'R' => 11,    'S' => 10.54,
-            'T' => 11,    'U' => 10.54, 'V' => 11,    'W' => 10.54,
+            'A' => 4,     'B' => 18,    'C' => 6,     'D' => 7,
+            'E' => 6,     'F' => 6,     'G' => 14,    'H' => 6,     'I' => 7,
+            'J' => 6,     'K' => 6,     'L' => 14,    'M' => 9,     'N' => 9,
+            'O' => 9,     'P' => 9,     'Q' => 9,     'R' => 9,
+            'S' => 9,     'T' => 9,     'U' => 14,    'V' => 14,
         ];
         foreach ($colWidths as $col => $w) {
             $sheet->getColumnDimension($col)->setWidth($w);
@@ -136,7 +136,7 @@ class GajPerbedaanExport
             : (Gaj::$bulanLabels[$gaj->bulan - 1] ?? '-') . ' ' . $gaj->tahun;
 
         // ── R1: Title ──────────────────────────────────────────────────────
-        $sheet->mergeCells('A1:W1');
+        $sheet->mergeCells('A1:V1');
         $sheet->setCellValue('A1', 'DAFTAR PERBEDAAN JUMLAH PEGAWAI DAN PEMBAYARAN');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -152,28 +152,27 @@ class GajPerbedaanExport
         $sheet->setCellValue('F5', ': 2.01.13.1.1.03.2');
 
         // ── R6: Group headers ──────────────────────────────────────────────
-        $sheet->setCellValue('B6', 'Golongan/');
-        $sheet->mergeCells('D6:H6');
-        $sheet->setCellValue('D6', 'I. Bulan : ' . $bulanLaluLabel);
-        $sheet->getStyle('D6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->mergeCells('I6:M6');
-        $sheet->setCellValue('I6', 'II. Bulan : ' . $gaj->periode);
-        $sheet->getStyle('I6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->mergeCells('N6:W6');
-        $sheet->setCellValue('N6', 'III. PERBEDAAN');
-        $sheet->getStyle('N6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setCellValue('B6', 'Golongan/Ruang');
+        $sheet->mergeCells('C6:G6');
+        $sheet->setCellValue('C6', 'I. Bulan : ' . $bulanLaluLabel);
+        $sheet->getStyle('C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('H6:L6');
+        $sheet->setCellValue('H6', 'II. Bulan : ' . $gaj->periode);
+        $sheet->getStyle('H6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('M6:V6');
+        $sheet->setCellValue('M6', 'III. PERBEDAAN');
+        $sheet->getStyle('M6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── R7: Column headers ─────────────────────────────────────────────
         $sheet->setCellValue('A7', 'No');
         $sheet->setCellValue('B7', 'Ruang');
-        // C7 intentionally blank (part of B column visual grouping)
 
-        // Bulan lalu columns (D-H) - merged D7:D8, E7:E8, etc.
+        // Bulan lalu columns (C-G) - merged C7:C8, D7:D8, etc.
         $singleHeaders = [
-            'D' => 'PEG.',  'E' => 'ISTRI', 'F' => 'ANAK',
-            'G' => 'JIWA',  'H' => 'JML. KOTOR',
-            'I' => 'PEG.',  'J' => 'ISTRI', 'K' => 'ANAK',
-            'L' => 'JIWA',  'M' => 'JML. KOTOR',
+            'C' => 'PEG.',  'D' => 'ISTRI', 'E' => 'ANAK',
+            'F' => 'JIWA',  'G' => 'JML. KOTOR',
+            'H' => 'PEG.',  'I' => 'ISTRI', 'J' => 'ANAK',
+            'K' => 'JIWA',  'L' => 'JML. KOTOR',
         ];
         foreach ($singleHeaders as $col => $text) {
             $sheet->mergeCells("{$col}7:{$col}8");
@@ -185,38 +184,38 @@ class GajPerbedaanExport
         }
 
         // Perbedaan columns - merged header pairs in R7
-        $sheet->mergeCells('N7:O7');
-        $sheet->setCellValue('N7', 'PEGAWAI');
-        $sheet->getStyle('N7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('M7:N7');
+        $sheet->setCellValue('M7', 'PEGAWAI');
+        $sheet->getStyle('M7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('P7:Q7');
-        $sheet->setCellValue('P7', 'ISTRI');
-        $sheet->getStyle('P7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('O7:P7');
+        $sheet->setCellValue('O7', 'ISTRI');
+        $sheet->getStyle('O7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('R7:S7');
-        $sheet->setCellValue('R7', 'ANAK');
-        $sheet->getStyle('R7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('Q7:R7');
+        $sheet->setCellValue('Q7', 'ANAK');
+        $sheet->getStyle('Q7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('T7:U7');
-        $sheet->setCellValue('T7', 'JIWA');
-        $sheet->getStyle('T7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('S7:T7');
+        $sheet->setCellValue('S7', 'JIWA');
+        $sheet->getStyle('S7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $sheet->mergeCells('V7:W7');
-        $sheet->setCellValue('V7', 'JUMLAH KOTOR');
-        $sheet->getStyle('V7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->mergeCells('U7:V7');
+        $sheet->setCellValue('U7', 'JUMLAH KOTOR');
+        $sheet->getStyle('U7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── R8: TAMBAH / KURANG sub-headers ────────────────────────────────
-        $sheet->setCellValue('N8', 'TAMBAH');
-        $sheet->setCellValue('O8', 'KURANG');
-        $sheet->setCellValue('P8', 'TAMBAH');
-        $sheet->setCellValue('Q8', 'KURANG');
-        $sheet->setCellValue('R8', 'TAMBAH');
-        $sheet->setCellValue('S8', 'KURANG');
-        $sheet->setCellValue('T8', 'TAMBAH');
-        $sheet->setCellValue('U8', 'KURANG');
-        $sheet->setCellValue('V8', 'TAMBAH');
-        $sheet->setCellValue('W8', 'KURANG');
-        $sheet->getStyle('N8:W8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->setCellValue('M8', 'TAMBAH');
+        $sheet->setCellValue('N8', 'KURANG');
+        $sheet->setCellValue('O8', 'TAMBAH');
+        $sheet->setCellValue('P8', 'KURANG');
+        $sheet->setCellValue('Q8', 'TAMBAH');
+        $sheet->setCellValue('R8', 'KURANG');
+        $sheet->setCellValue('S8', 'TAMBAH');
+        $sheet->setCellValue('T8', 'KURANG');
+        $sheet->setCellValue('U8', 'TAMBAH');
+        $sheet->setCellValue('V8', 'KURANG');
+        $sheet->getStyle('M8:V8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Merge A7:A8 and B7:B8 for vertical centering
         $sheet->mergeCells('A7:A8');
@@ -227,22 +226,21 @@ class GajPerbedaanExport
         $sheet->getStyle('B7')->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER);
-        // C7:C8 (blank column for golongan code)
-        $sheet->mergeCells('C7:C8');
 
-        // Bold the entire header area R6:W8
-        $sheet->getStyle('A6:W8')->getFont()->setBold(true);
+        // Bold the entire header area R6:V8
+        $sheet->getStyle('A6:V8')->getFont()->setBold(true);
 
         // ── R9: Column numbers 1-22 ────────────────────────────────────────
-        $colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W'];
+        $colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V'];
         foreach ($colLetters as $idx => $col) {
             $sheet->setCellValue("{$col}9", $idx + 1);
             $sheet->getStyle("{$col}9")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
-        $sheet->getStyle('A9:W9')->getFont()->setSize(8);
+        $sheet->getStyle('A9:V9')->getFont()->setSize(8);
 
         // ── Data rows ─────────────────────────────────────────────────────
         $dataRow = 10;
+        $groupNumber = 1;  // Counter for golongan groups (I, II, III, IV)
         $totLalu = ['peg' => 0, 'istri' => 0, 'anak' => 0, 'jiwa' => 0, 'kotor' => 0];
         $totNow  = $totLalu;
 
@@ -250,13 +248,16 @@ class GajPerbedaanExport
             $groupLalu = ['peg' => 0, 'istri' => 0, 'anak' => 0, 'jiwa' => 0, 'kotor' => 0];
             $groupNow  = $groupLalu;
 
+            $isFirstRow = true;
             foreach ($golRows as $gRow) {
                 $lalu = $dataLalu[$gRow['key']] ?? ['peg' => 0, 'istri' => 0, 'anak' => 0, 'jiwa' => 0, 'kotor' => 0];
                 $now  = $dataNow[$gRow['key']]  ?? ['peg' => 0, 'istri' => 0, 'anak' => 0, 'jiwa' => 0, 'kotor' => 0];
 
-                $ruang = $isPns ? $gRow['key'] : ($gRow['ruang'] ?? '');
-                $this->writeDataRow($sheet, $dataRow, null, $gRow['label'], $ruang, $lalu, $now);
+                // Only add number to the first row of each group
+                $rowNum = $isFirstRow ? $groupNumber : null;
+                $this->writeDataRow($sheet, $dataRow, $rowNum, $gRow['label'], $lalu, $now);
                 $dataRow++;
+                $isFirstRow = false;
 
                 foreach (['peg', 'istri', 'anak', 'jiwa', 'kotor'] as $k) {
                     $groupLalu[$k] += $lalu[$k];
@@ -264,9 +265,10 @@ class GajPerbedaanExport
                 }
             }
 
-            // Subtotal golongan
-            $this->writeDataRow($sheet, $dataRow, null, "Jumlah Gol {$groupRoman}", '', $groupLalu, $groupNow, true);
+            // Subtotal golongan (no row number)
+            $this->writeDataRow($sheet, $dataRow, null, "Jumlah Gol {$groupRoman}", $groupLalu, $groupNow, true);
             $dataRow++;
+            $groupNumber++;
 
             foreach (['peg', 'istri', 'anak', 'jiwa', 'kotor'] as $k) {
                 $totLalu[$k] += $groupLalu[$k];
@@ -274,12 +276,12 @@ class GajPerbedaanExport
             }
         }
 
-        // Grand total
-        $this->writeDataRow($sheet, $dataRow, null, 'JUMLAH', '', $totLalu, $totNow, true);
+        // Grand total (no row number)
+        $this->writeDataRow($sheet, $dataRow, null, 'JUMLAH', $totLalu, $totNow, true);
         $lastDataRow = $dataRow;
 
-        // ── Borders: entire data area A6:W[lastDataRow] ────────────────────
-        $sheet->getStyle("A6:W{$lastDataRow}")
+        // ── Borders: entire data area A6:V[lastDataRow] ────────────────────
+        $sheet->getStyle("A6:V{$lastDataRow}")
             ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         // ── TTD Section ────────────────────────────────────────────────────
@@ -289,43 +291,43 @@ class GajPerbedaanExport
         $ttdStart = $lastDataRow + 3;
 
         $sheet->setCellValue("B" . ($ttdStart + 2), 'Bendahara Pengeluaran');
-        $sheet->setCellValue("R" . ($ttdStart + 2), 'Pembantu Bendahara Pengeluaran');
-        $sheet->setCellValue("R" . ($ttdStart + 3), 'Untuk Urusan Gaji');
+        $sheet->setCellValue("Q" . ($ttdStart + 2), 'Pembantu Bendahara Pengeluaran');
+        $sheet->setCellValue("Q" . ($ttdStart + 3), 'Untuk Urusan Gaji');
 
         $sheet->setCellValue("B" . ($ttdStart + 6), $bendahara->nama ?? '—');
         $sheet->getStyle("B" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
         $sheet->setCellValue("B" . ($ttdStart + 7), 'NIP. ' . ($bendahara->nip ?? ''));
 
-        $sheet->setCellValue("R" . ($ttdStart + 6), $bendaharaGaji->nama ?? '—');
-        $sheet->getStyle("R" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
-        $sheet->setCellValue("R" . ($ttdStart + 7), 'NIP. ' . ($bendaharaGaji->nip ?? ''));
+        $sheet->setCellValue("Q" . ($ttdStart + 6), $bendaharaGaji->nama ?? '—');
+        $sheet->getStyle("Q" . ($ttdStart + 6))->getFont()->setBold(true)->setUnderline(true);
+        $sheet->setCellValue("Q" . ($ttdStart + 7), 'NIP. ' . ($bendaharaGaji->nip ?? ''));
     }
 
-    private function writeDataRow($sheet, int $row, ?int $no, string $label, string $ruang, array $lalu, array $now, bool $bold = false): void
+    private function writeDataRow($sheet, int $row, ?int $no, string $label, array $lalu, array $now, bool $bold = false): void
     {
         if ($no !== null) {
             $sheet->setCellValue("A{$row}", $no);
         }
         $sheet->setCellValue("B{$row}", $label);
-        $sheet->setCellValue("C{$row}", $ruang);
+        // Column C removed - no more ruang column
 
         $fmt = fn ($v) => $v > 0 ? $v : '-';
 
-        // Bulan lalu (D-H)
-        $sheet->setCellValue("D{$row}", $fmt($lalu['peg']));
-        $sheet->setCellValue("E{$row}", $fmt($lalu['istri']));
-        $sheet->setCellValue("F{$row}", $fmt($lalu['anak']));
-        $sheet->setCellValue("G{$row}", $fmt($lalu['jiwa']));
-        $sheet->setCellValue("H{$row}", $lalu['kotor'] > 0 ? $lalu['kotor'] : '-');
+        // Bulan lalu (C-G, shifted from D-H)
+        $sheet->setCellValue("C{$row}", $fmt($lalu['peg']));
+        $sheet->setCellValue("D{$row}", $fmt($lalu['istri']));
+        $sheet->setCellValue("E{$row}", $fmt($lalu['anak']));
+        $sheet->setCellValue("F{$row}", $fmt($lalu['jiwa']));
+        $sheet->setCellValue("G{$row}", $lalu['kotor'] > 0 ? $lalu['kotor'] : '-');
 
-        // Bulan berkenaan (I-M)
-        $sheet->setCellValue("I{$row}", $fmt($now['peg']));
-        $sheet->setCellValue("J{$row}", $fmt($now['istri']));
-        $sheet->setCellValue("K{$row}", $fmt($now['anak']));
-        $sheet->setCellValue("L{$row}", $fmt($now['jiwa']));
-        $sheet->setCellValue("M{$row}", $now['kotor'] > 0 ? $now['kotor'] : '-');
+        // Bulan berkenaan (H-L, shifted from I-M)
+        $sheet->setCellValue("H{$row}", $fmt($now['peg']));
+        $sheet->setCellValue("I{$row}", $fmt($now['istri']));
+        $sheet->setCellValue("J{$row}", $fmt($now['anak']));
+        $sheet->setCellValue("K{$row}", $fmt($now['jiwa']));
+        $sheet->setCellValue("L{$row}", $now['kotor'] > 0 ? $now['kotor'] : '-');
 
-        // Perbedaan: PEGAWAI, ISTRI, ANAK, JIWA, JUMLAH KOTOR (N-W)
+        // Perbedaan: PEGAWAI, ISTRI, ANAK, JIWA, JUMLAH KOTOR (M-V, shifted from N-W)
         $diff = fn (string $k) => [
             'tambah' => $now[$k] > $lalu[$k] ? $now[$k] - $lalu[$k] : '-',
             'kurang' => $now[$k] < $lalu[$k] ? $lalu[$k] - $now[$k] : '-',
@@ -336,7 +338,7 @@ class GajPerbedaanExport
         $dJiwa  = $diff('jiwa');
         $dKotor = $diff('kotor');
 
-        $cols = ['N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'];
+        $cols = ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'];
         $vals = [
             $dPeg['tambah'], $dPeg['kurang'],
             $dIstri['tambah'], $dIstri['kurang'],
@@ -350,15 +352,15 @@ class GajPerbedaanExport
         }
 
         // Alignment: center all columns
-        $sheet->getStyle("A{$row}:W{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A{$row}:V{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Bold for subtotal/total rows
         if ($bold) {
-            $sheet->getStyle("A{$row}:W{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:V{$row}")->getFont()->setBold(true);
         }
 
-        // Number format for money columns (H, M, V, W)
-        foreach (['H', 'M', 'V', 'W'] as $col) {
+        // Number format for money columns (G, L, U, V - shifted from H, M, V, W)
+        foreach (['G', 'L', 'U', 'V'] as $col) {
             $cellValue = $sheet->getCell("{$col}{$row}")->getValue();
             if (is_int($cellValue) || is_float($cellValue)) {
                 $sheet->getStyle("{$col}{$row}")->getNumberFormat()->setFormatCode('#,##0');
