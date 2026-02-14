@@ -87,7 +87,8 @@ class GajResource extends Resource
 
                 Tables\Columns\TextColumn::make('nama_satker')
                     ->label('Satker')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('bulan')
                     ->label('Periode')
@@ -96,7 +97,8 @@ class GajResource extends Resource
 
                 Tables\Columns\TextColumn::make('tahun')
                     ->label('Tahun')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('seksi_akronim')
                     ->label('Seksi')
