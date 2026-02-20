@@ -18,14 +18,6 @@ class WaGatewayService
 {
     protected const WA_WRAP_WIDTH = 48;
 
-    // Anti-spam configuration
-    protected const MIN_DELAY_MS = 3000;        // Minimum delay 3 detik
-    protected const MAX_DELAY_MS = 7000;        // Maximum delay 7 detik
-    protected const RATE_LIMIT_PER_HOUR = 50;   // Max pesan per jam
-    protected const RATE_LIMIT_PER_DAY = 300;   // Max pesan per hari
-    protected const CIRCUIT_BREAKER_THRESHOLD = 3;  // Max kegagalan berturut-turut
-    protected const CIRCUIT_BREAKER_COOLDOWN_SECONDS = 900; // Cooldown 15 menit
-
     protected string $baseUrl;
     protected string $token;
     protected ?string $secretKey;
@@ -33,6 +25,14 @@ class WaGatewayService
     protected string $groupId;
     protected array $groupMappings;
     protected string $masterKey;
+
+    // Anti-spam configuration (diambil dari WaGatewaySetting)
+    protected int $minDelayMs;
+    protected int $maxDelayMs;
+    protected int $rateLimitPerHour;
+    protected int $rateLimitPerDay;
+    protected int $circuitBreakerThreshold;
+    protected int $circuitBreakerCooldownSeconds;
 
     // Anti-spam state tracking
     protected static int $messagesSentThisSession = 0;
@@ -54,6 +54,14 @@ class WaGatewayService
         $this->groupMappings = $settings->groupMappings();
         $this->masterKey = (string) ($settings->key ?: config('wa_gateway.key', ''));
         $this->groupId   = $this->resolveDefaultGroupId();
+
+        // Anti-spam config dari database (dengan fallback ke nilai default)
+        $this->minDelayMs                 = (int) ($settings->min_delay_ms ?? 3000);
+        $this->maxDelayMs                 = (int) ($settings->max_delay_ms ?? 7000);
+        $this->rateLimitPerHour           = (int) ($settings->rate_limit_per_hour ?? 50);
+        $this->rateLimitPerDay            = (int) ($settings->rate_limit_per_day ?? 300);
+        $this->circuitBreakerThreshold    = (int) ($settings->circuit_breaker_threshold ?? 3);
+        $this->circuitBreakerCooldownSeconds = (int) ($settings->circuit_breaker_cooldown_seconds ?? 900);
     }
 
     public function isConfigured(): bool
@@ -70,7 +78,7 @@ class WaGatewayService
     protected function applyAntiSpamDelay(): void
     {
         if (self::$lastSendTimestamp !== null) {
-            $delayMs = random_int(self::MIN_DELAY_MS, self::MAX_DELAY_MS);
+            $delayMs = random_int($this->minDelayMs, $this->maxDelayMs);
             usleep($delayMs * 1000); // Convert to microseconds
 
             Log::debug('WA Gateway: anti-spam delay applied', [
@@ -116,8 +124,8 @@ class WaGatewayService
     {
         self::$consecutiveFailures++;
 
-        if (self::$consecutiveFailures >= self::CIRCUIT_BREAKER_THRESHOLD) {
-            self::$circuitBreakerUntil = time() + self::CIRCUIT_BREAKER_COOLDOWN_SECONDS;
+        if (self::$consecutiveFailures >= $this->circuitBreakerThreshold) {
+            self::$circuitBreakerUntil = time() + $this->circuitBreakerCooldownSeconds;
 
             Log::error('WA Gateway: circuit breaker AKTIF karena kegagalan berturut-turut', [
                 'failures' => self::$consecutiveFailures,
@@ -143,10 +151,10 @@ class WaGatewayService
         $cacheKey = 'wa_gateway_rate_limit_' . date('Y-m-d-H');
         $hourlyCount = (int) cache($cacheKey, 0);
 
-        if ($hourlyCount >= self::RATE_LIMIT_PER_HOUR) {
+        if ($hourlyCount >= $this->rateLimitPerHour) {
             Log::warning('WA Gateway: rate limit per jam tercapai', [
                 'count' => $hourlyCount,
-                'limit' => self::RATE_LIMIT_PER_HOUR,
+                'limit' => $this->rateLimitPerHour,
             ]);
 
             return true;
@@ -155,10 +163,10 @@ class WaGatewayService
         $dailyCacheKey = 'wa_gateway_rate_limit_daily_' . date('Y-m-d');
         $dailyCount = (int) cache($dailyCacheKey, 0);
 
-        if ($dailyCount >= self::RATE_LIMIT_PER_DAY) {
+        if ($dailyCount >= $this->rateLimitPerDay) {
             Log::warning('WA Gateway: rate limit per hari tercapai', [
                 'count' => $dailyCount,
-                'limit' => self::RATE_LIMIT_PER_DAY,
+                'limit' => $this->rateLimitPerDay,
             ]);
 
             return true;
@@ -248,9 +256,9 @@ class WaGatewayService
                 ? date('Y-m-d H:i:s', self::$circuitBreakerUntil)
                 : null,
             'hourly_count' => (int) cache($hourlyKey, 0),
-            'hourly_limit' => self::RATE_LIMIT_PER_HOUR,
+            'hourly_limit' => $this->rateLimitPerHour,
             'daily_count' => (int) cache($dailyKey, 0),
-            'daily_limit' => self::RATE_LIMIT_PER_DAY,
+            'daily_limit' => $this->rateLimitPerDay,
             'can_send' => $this->checkAntiSpamConditions()['allowed'],
         ];
     }

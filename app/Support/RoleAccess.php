@@ -35,6 +35,7 @@ class RoleAccess
             'filament.admin.resources.data-kantor' => 'Daftar Dokumen Umum',
             'filament.admin.pages.pengurus-barang' => 'Pengurus Barang',
             'filament.admin.pages.wa-gateway' => 'Pengaturan WA Gateway',
+            'filament.admin.pages.anti-spam-settings' => 'Pengaturan Anti-Spam WA',
             'filament.admin.pages.wa-message-templates' => 'Template Pesan WA',
             'filament.admin.pages.seksi-ekbang' => 'Dashboard Seksi Ekbang',
             'filament.admin.pages.verifikasi-banprov' => 'Verifikasi Banprov',
