@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\KodeSuratResource\Pages;
 
 use App\Filament\Resources\KodeSuratResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListKodeSurats extends ListRecords
@@ -11,6 +12,9 @@ class ListKodeSurats extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            CreateAction::make()
+                ->visible(fn () => auth()->user()?->isAdmin()),
+        ];
     }
 }
