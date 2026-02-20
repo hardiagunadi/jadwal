@@ -74,18 +74,31 @@ class WaGatewayService
 
     /**
      * Menerapkan delay random antar pengiriman untuk menghindari deteksi spam.
+     * Menggunakan cache agar delay berlaku lintas-process (queue workers terpisah).
      */
     protected function applyAntiSpamDelay(): void
     {
-        if (self::$lastSendTimestamp !== null) {
-            $delayMs = random_int($this->minDelayMs, $this->maxDelayMs);
-            usleep($delayMs * 1000); // Convert to microseconds
+        $lastTs = (int) cache('wa_gateway_last_send_ts', 0);
+        $now = time();
 
-            Log::debug('WA Gateway: anti-spam delay applied', [
-                'delay_ms' => $delayMs,
-            ]);
+        // Selalu terapkan delay jika pernah ada pengiriman sebelumnya (termasuk dari process lain).
+        if ($lastTs > 0) {
+            $elapsedMs = ($now - $lastTs) * 1000;
+            $targetMs  = random_int($this->minDelayMs, $this->maxDelayMs);
+
+            if ($elapsedMs < $targetMs) {
+                $sleepMs = $targetMs - $elapsedMs;
+                usleep($sleepMs * 1000);
+
+                Log::debug('WA Gateway: anti-spam delay applied', [
+                    'sleep_ms'   => $sleepMs,
+                    'elapsed_ms' => $elapsedMs,
+                    'target_ms'  => $targetMs,
+                ]);
+            }
         }
 
+        cache(['wa_gateway_last_send_ts' => time()], now()->addMinutes(10));
         self::$lastSendTimestamp = time();
     }
 
@@ -1106,6 +1119,8 @@ class WaGatewayService
 
     /**
      * Kirim pesan teks ke nomor personal (bukan grup).
+     * Setiap nomor dikirim SATU PER SATU dengan delay antar pengiriman
+     * agar tidak dianggap spam oleh WhatsApp.
      *
      * @param  array<int, string|null>  $numbers
      */
@@ -1119,52 +1134,24 @@ class WaGatewayService
             ];
         }
 
-        // Cek kondisi anti-spam
-        $antiSpamCheck = $this->checkAntiSpamConditions();
-        if (! $antiSpamCheck['allowed']) {
-            Log::warning('WA Gateway: pengiriman personal diblokir oleh anti-spam', [
-                'reason' => $antiSpamCheck['reason'],
-            ]);
-
-            return [
-                'success' => false,
-                'error' => $antiSpamCheck['reason'],
-                'response' => null,
-            ];
-        }
-
-        // Terapkan delay anti-spam
-        $this->applyAntiSpamDelay();
-
-        // Tambahkan variasi pesan
-        $finalMessage = $applyVariation ? $this->appendMessageVariation($message) : $message;
-
-        $data = [];
-
+        // Normalisasi semua nomor terlebih dahulu
+        $normalized = [];
         foreach ($numbers as $number) {
             $raw = trim((string) ($number ?? ''));
             if ($raw === '') {
                 continue;
             }
 
-            if (str_contains($raw, '@lid')) {
-                $normalized = $this->resolveLidNumber($raw);
-            } else {
-                $normalized = $this->normalizePhone($raw);
-            }
+            $norm = str_contains($raw, '@lid')
+                ? $this->resolveLidNumber($raw)
+                : $this->normalizePhone($raw);
 
-            if (! $normalized) {
-                continue;
+            if ($norm) {
+                $normalized[] = $norm;
             }
-
-            $data[] = [
-                'phone' => $normalized,
-                'message' => $finalMessage,
-                'isGroup' => 'false',
-            ];
         }
 
-        if (empty($data)) {
+        if (empty($normalized)) {
             return [
                 'success' => false,
                 'error' => 'Tidak ada nomor WA yang valid.',
@@ -1172,56 +1159,102 @@ class WaGatewayService
             ];
         }
 
-        try {
-            $response = $this->client()
-                ->post($this->baseUrl . '/api/v2/send-message', ['data' => $data]);
-        } catch (\Throwable $exception) {
-            Log::error('WA Gateway: HTTP error kirim personal text', [
-                'message' => $exception->getMessage(),
-            ]);
+        $lastResult = ['success' => false, 'error' => null, 'response' => null];
+        $anyFailed  = false;
 
-            $this->recordFailure();
-
-            return [
-                'success' => false,
-                'error' => $exception->getMessage(),
-                'response' => null,
-            ];
-        }
-
-        if (! $response->successful()) {
-            Log::error('WA Gateway: HTTP error kirim personal text', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            $this->recordFailure();
-
-            return [
-                'success' => false,
-                'error' => 'HTTP ' . $response->status(),
-                'response' => $response->json(),
-            ];
-        }
-
-        $json = $response->json();
-        $success = (bool) data_get($json, 'status', false);
-
-        if ($success) {
-            $this->recordSuccess();
-            // Increment rate limit untuk setiap nomor yang berhasil
-            foreach ($data as $_) {
-                $this->incrementRateLimitCounter();
+        foreach ($normalized as $phone) {
+            // Cek anti-spam sebelum setiap pengiriman
+            $antiSpamCheck = $this->checkAntiSpamConditions();
+            if (! $antiSpamCheck['allowed']) {
+                Log::warning('WA Gateway: pengiriman personal diblokir oleh anti-spam', [
+                    'reason' => $antiSpamCheck['reason'],
+                    'phone'  => $phone,
+                ]);
+                $anyFailed  = true;
+                $lastResult = [
+                    'success' => false,
+                    'error'   => $antiSpamCheck['reason'],
+                    'response' => null,
+                ];
+                continue;
             }
-        } else {
-            $this->recordFailure();
+
+            // Delay SEBELUM setiap pengiriman (lintas-process via cache)
+            $this->applyAntiSpamDelay();
+
+            // Variasi konten per pesan agar tidak identik
+            $finalMessage = $applyVariation ? $this->appendMessageVariation($message) : $message;
+
+            $payload = [
+                'data' => [
+                    [
+                        'phone'   => $phone,
+                        'message' => $finalMessage,
+                        'isGroup' => 'false',
+                    ],
+                ],
+            ];
+
+            try {
+                $response = $this->client()
+                    ->post($this->baseUrl . '/api/v2/send-message', $payload);
+            } catch (\Throwable $exception) {
+                Log::error('WA Gateway: HTTP error kirim personal text', [
+                    'message' => $exception->getMessage(),
+                    'phone'   => $phone,
+                ]);
+
+                $this->recordFailure();
+                $anyFailed  = true;
+                $lastResult = [
+                    'success' => false,
+                    'error'   => $exception->getMessage(),
+                    'response' => null,
+                ];
+                continue;
+            }
+
+            if (! $response->successful()) {
+                Log::error('WA Gateway: HTTP error kirim personal text', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                    'phone'  => $phone,
+                ]);
+
+                $this->recordFailure();
+                $anyFailed  = true;
+                $lastResult = [
+                    'success' => false,
+                    'error'   => 'HTTP ' . $response->status(),
+                    'response' => $response->json(),
+                ];
+                continue;
+            }
+
+            $json    = $response->json();
+            $success = (bool) data_get($json, 'status', false);
+
+            if ($success) {
+                $this->recordSuccess();
+                $this->incrementRateLimitCounter();
+            } else {
+                $this->recordFailure();
+                $anyFailed = true;
+            }
+
+            $lastResult = [
+                'success' => $success,
+                'error'   => $success ? null : (data_get($json, 'message') ?: 'Pengiriman gagal'),
+                'response' => $json,
+            ];
         }
 
-        return [
-            'success' => $success,
-            'error' => $success ? null : (data_get($json, 'message') ?: 'Pengiriman gagal'),
-            'response' => $json,
-        ];
+        // Kembalikan success=true hanya jika semua nomor berhasil
+        if ($anyFailed) {
+            $lastResult['success'] = false;
+        }
+
+        return $lastResult;
     }
 
     /**
