@@ -61,11 +61,13 @@ class KirimPengingatTindakLanjut extends Command
         }
 
         // Overdue (melewati batas) - kirim pengingat akhir atau ulang + perpanjang 1 hari
+        // Kecualikan ID yang sudah diproses oleh batch awal di run yang sama.
         $overdueBatch = Kegiatan::query()
             ->where('perlu_tindak_lanjut', true)
             ->whereNotNull('batas_tindak_lanjut')
             ->whereNull('tindak_lanjut_selesai_at')
             ->where('batas_tindak_lanjut', '<=', $now)
+            ->when(! empty($processedIds), fn ($q) => $q->whereNotIn('id', $processedIds))
             ->get();
 
         foreach ($overdueBatch as $kegiatan) {

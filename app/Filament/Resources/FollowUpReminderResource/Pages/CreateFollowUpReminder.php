@@ -17,7 +17,9 @@ class CreateFollowUpReminder extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        $personilIds = $data['personil_ids'] ?? null;
+        // $data berasal dari form->getState() yang mengecualikan field dehydrated(false).
+        // Baca personil_ids langsung dari Livewire state ($this->data) agar nilainya tetap ada.
+        $personilIds = $this->data['personil_ids'] ?? null;
         unset($data['personil_ids']);
 
         if (is_array($personilIds)) {
