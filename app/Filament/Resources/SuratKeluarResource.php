@@ -15,6 +15,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -108,7 +109,20 @@ class SuratKeluarResource extends Resource
                         ->placeholder('Ketik kode atau keterangan')
                         ->required(fn (callable $get) => ($get('jenis_nomor') ?? 'master') === 'master')
                         ->live()
-                        ->hiddenOn('edit'),
+                        ->hiddenOn('edit')
+                        ->createOptionForm(fn () => auth()->user()?->isAdmin() ? [
+                            TextInput::make('kode')
+                                ->label('Kode Klasifikasi')
+                                ->required()
+                                ->maxLength(50),
+                            TextInput::make('keterangan')
+                                ->label('Keterangan')
+                                ->required()
+                                ->maxLength(255),
+                        ] : [])
+                        ->createOptionUsing(function (array $data): int {
+                            return KodeSurat::create($data)->id;
+                        }),
 
                     Select::make('master_id')
                         ->label('Nomor Master')
