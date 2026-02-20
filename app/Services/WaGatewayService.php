@@ -1319,15 +1319,12 @@ class WaGatewayService
 
         $suratUrl = $this->getShortSuratUrl($kegiatan);
 
-        $keteranganLine = $keterangan !== ''
-            ? $this->formatDisposisiTemplateLine('Keterangan', $keterangan)
-            : '';
-        $batasTlLine = $batasTl !== ''
-            ? $this->formatDisposisiTemplateLine('Batas TL', $batasTl)
-            : '';
-        $suratLine = $suratUrl
-            ? $this->formatDisposisiTemplateLine('Link surat', $suratUrl)
-            : '';
+        $keteranganBlock = '';
+        if ($keterangan !== '') {
+            $keteranganBlock = "*Keterangan:*\n{$keterangan}\n";
+        }
+        $batasTlLine = $batasTl !== '' ? "*Batas TL:* {$batasTl}\n" : '';
+        $suratLine = $suratUrl ? "*Link surat:* {$suratUrl}\n" : '';
 
         $data = [
             'greeting' => $greeting,
@@ -1339,10 +1336,10 @@ class WaGatewayService
             'keterangan_raw' => $keterangan,
             'batas_tl' => $batasTl,
             'surat_url' => $suratUrl ?? '',
-            'kegiatan_line' => $this->formatDisposisiTemplateLine('Kegiatan', $kegiatanName),
-            'tanggal_line' => $this->formatDisposisiTemplateLine('Hari/tanggal', $tanggalLabel),
-            'tempat_line' => $this->formatDisposisiTemplateLine('Tempat', $tempat),
-            'keterangan_line' => $keteranganLine,
+            'kegiatan_line' => "*Kegiatan:* {$kegiatanName}\n",
+            'tanggal_line' => "*Hari/tanggal:* {$tanggalLabel}\n",
+            'tempat_line' => "*Tempat:* {$tempat}\n",
+            'keterangan_line' => $keteranganBlock,
             'batas_tl_line' => $batasTlLine,
             'surat_line' => $suratLine,
             'footer' => '_Harap laporkan hasil kegiatan kepada Pimpinan_',
@@ -1350,20 +1347,23 @@ class WaGatewayService
 
         $lines = [];
         $lines[] = $greeting . ' ' . $sapaan . '. Anda telah mendapatkan disposisi agenda berikut:';
-        $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Kegiatan', $kegiatanName));
-        $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Hari/tanggal', $tanggalLabel));
-        $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Tempat', $tempat));
+        $lines[] = '';
+        $lines[] = '*Kegiatan:* ' . $kegiatanName;
+        $lines[] = '*Hari/tanggal:* ' . $tanggalLabel;
+        $lines[] = '*Tempat:* ' . $tempat;
 
         if ($keterangan !== '') {
-            $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Keterangan', $keterangan));
+            $lines[] = '';
+            $lines[] = '*Keterangan:*';
+            $lines[] = $keterangan;
         }
 
         if ($batasTl !== '') {
-            $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Batas TL', $batasTl));
+            $lines[] = '*Batas TL:* ' . $batasTl;
         }
 
         if ($suratUrl) {
-            $lines = array_merge($lines, $this->formatDisposisiWrappedLines('Link surat', $suratUrl));
+            $lines[] = '*Link surat:* ' . $suratUrl;
         }
 
         $lines[] = '';

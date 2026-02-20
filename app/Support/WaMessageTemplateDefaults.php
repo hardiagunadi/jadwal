@@ -108,7 +108,7 @@ class WaMessageTemplateDefaults
                     ],
                     'body' => [
                         'label' => 'Isi Disposisi',
-                        'template' => '{kegiatan_line}{tanggal_line}{tempat_line}{keterangan_line}{batas_tl_line}{surat_line}',
+                        'template' => "*Kegiatan:* {kegiatan}\n*Hari/tanggal:* {tanggal}\n*Tempat:* {tempat}\n{keterangan_line}{batas_tl_line}{surat_line}",
                     ],
                     'footer' => [
                         'label' => 'Footer',
@@ -117,7 +117,7 @@ class WaMessageTemplateDefaults
                 ],
                 'template' => implode("\n\n", [
                     '{greeting} {sapaan} telah mendapatkan disposisi agenda sebagai berikut:',
-                    '{kegiatan_line}{tanggal_line}{tempat_line}{keterangan_line}{batas_tl_line}{surat_line}',
+                    "*Kegiatan:* {kegiatan}\n*Hari/tanggal:* {tanggal}\n*Tempat:* {tempat}\n{keterangan_line}{batas_tl_line}{surat_line}",
                     '{footer}',
                 ]),
             ],

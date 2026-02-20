@@ -37,7 +37,6 @@ class RoleAccess
             'filament.admin.pages.wa-gateway' => 'Pengaturan WA Gateway',
             'filament.admin.pages.anti-spam-settings' => 'Pengaturan Anti-Spam WA',
             'filament.admin.pages.wa-message-templates' => 'Template Pesan WA',
-            'filament.admin.pages.seksi-ekbang' => 'Dashboard Seksi Ekbang',
             'filament.admin.pages.verifikasi-banprov' => 'Verifikasi Banprov',
             'filament.admin.resources.dpa' => 'DPA (Dokumen Pelaksanaan Anggaran)',
             'filament.admin.resources.spj' => 'SPJ Kwitansi Dinas',
