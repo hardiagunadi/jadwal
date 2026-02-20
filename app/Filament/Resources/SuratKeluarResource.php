@@ -253,7 +253,7 @@ class SuratKeluarResource extends Resource
                         ->hiddenOn('edit')
                         ->dehydrated(false),
                 ])
-                ->columns(2),
+                ->columns(1),
         ]);
     }
 
