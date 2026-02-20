@@ -114,6 +114,8 @@ class AdminPanelProvider extends PanelProvider
                 AgendaPerHariChart::class,
                 VehicleStatsOverview::class,
             ])
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->renderHook(PanelsRenderHook::BODY_END, fn () => view('filament.partials.wa-inbox-toast'))
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.brand-logo-styles'))
             ->navigationGroups([
