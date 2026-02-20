@@ -40,7 +40,8 @@ class KodeSuratResource extends Resource
                         ->required()
                         ->maxLength(255),
                 ])
-                ->columns(2),
+                ->columns(1)
+                ->columnSpanFull(),
         ]);
     }
 
