@@ -32,6 +32,7 @@ class MobileNotification extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
+            'format' => 'filament',
             'title' => $this->title,
             'body' => $this->body,
             'type' => $this->type,

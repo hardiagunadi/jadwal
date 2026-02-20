@@ -197,6 +197,40 @@ class WaInboxMessageResource extends Resource
             ]);
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        $count = WaInboxMessage::query()
+            ->whereIn('status', [WaInboxMessage::STATUS_NEW, WaInboxMessage::STATUS_ASSIGNED])
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        $newCount = WaInboxMessage::query()
+            ->where('status', WaInboxMessage::STATUS_NEW)
+            ->count();
+
+        return $newCount > 0 ? 'warning' : 'info';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $new = WaInboxMessage::query()->where('status', WaInboxMessage::STATUS_NEW)->count();
+        $assigned = WaInboxMessage::query()->where('status', WaInboxMessage::STATUS_ASSIGNED)->count();
+
+        $parts = [];
+        if ($new > 0) {
+            $parts[] = "{$new} baru";
+        }
+        if ($assigned > 0) {
+            $parts[] = "{$assigned} diambil";
+        }
+
+        return $parts ? implode(', ', $parts) . ' belum dibalas' : null;
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return RoleAccess::canSeeNav(auth()->user(), 'filament.admin.resources.wa-inbox-messages');
