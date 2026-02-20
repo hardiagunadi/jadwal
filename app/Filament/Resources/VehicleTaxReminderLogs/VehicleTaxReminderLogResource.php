@@ -8,6 +8,7 @@ use App\Services\VehicleTaxReminderService;
 use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
@@ -145,7 +146,7 @@ class VehicleTaxReminderLogResource extends Resource
                     ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
             ->toolbarActions([
-                Tables\Actions\BulkActionGroup::make([
+                BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()?->isAdmin() === true),
                 ]),

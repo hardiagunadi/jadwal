@@ -6,6 +6,7 @@ use App\Filament\Resources\FollowUpReminderLogs\Pages\ListFollowUpReminderLogs;
 use App\Models\FollowUpReminder;
 use App\Support\RoleAccess;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
@@ -132,7 +133,7 @@ class FollowUpReminderLogResource extends Resource
                     ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
             ->toolbarActions([
-                Tables\Actions\BulkActionGroup::make([
+                BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()?->isAdmin() === true),
                 ]),

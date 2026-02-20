@@ -11,6 +11,7 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
@@ -183,7 +184,7 @@ class TindakLanjutReminderLogResource extends Resource
                     ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
             ->toolbarActions([
-                \Filament\Tables\Actions\BulkActionGroup::make([
+                BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()?->isAdmin() === true),
                 ]),
