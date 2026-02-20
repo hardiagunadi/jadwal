@@ -11,6 +11,8 @@ use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -177,8 +179,38 @@ class TindakLanjutReminderLogResource extends Resource
                                 ->send();
                         }
                     }),
+                DeleteAction::make()
+                    ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
-            ->bulkActions([]);
+            ->toolbarActions([
+                \Filament\Tables\Actions\BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() === true),
+                ]),
+            ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = TindakLanjutReminderLog::query()
+            ->where('status', 'failed')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = TindakLanjutReminderLog::query()
+            ->where('status', 'failed')
+            ->count();
+
+        return $count > 0 ? "{$count} pengingat TL gagal terkirim" : null;
     }
 
     public static function shouldRegisterNavigation(): bool

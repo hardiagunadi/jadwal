@@ -8,6 +8,8 @@ use App\Services\VehicleTaxReminderService;
 use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -139,8 +141,38 @@ class VehicleTaxReminderLogResource extends Resource
                                 ->send();
                         }
                     }),
+                DeleteAction::make()
+                    ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
-            ->bulkActions([]);
+            ->toolbarActions([
+                Tables\Actions\BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() === true),
+                ]),
+            ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = VehicleTaxReminderLog::query()
+            ->where('status', 'failed')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = VehicleTaxReminderLog::query()
+            ->where('status', 'failed')
+            ->count();
+
+        return $count > 0 ? "{$count} pengingat pajak gagal terkirim" : null;
     }
 
     public static function shouldRegisterNavigation(): bool

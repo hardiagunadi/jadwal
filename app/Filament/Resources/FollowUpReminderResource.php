@@ -11,6 +11,7 @@ use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
@@ -374,12 +375,38 @@ class FollowUpReminderResource extends Resource
                             ->send();
                     }),
                 EditAction::make(),
+                DeleteAction::make()
+                    ->visible(fn () => auth()->user()?->isAdmin() === true),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() === true),
                 ]),
             ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = FollowUpReminder::query()
+            ->whereNull('acknowledged_at')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = FollowUpReminder::query()
+            ->whereNull('acknowledged_at')
+            ->count();
+
+        return $count > 0 ? "{$count} pengingat aktif belum selesai" : null;
     }
 
     public static function shouldRegisterNavigation(): bool

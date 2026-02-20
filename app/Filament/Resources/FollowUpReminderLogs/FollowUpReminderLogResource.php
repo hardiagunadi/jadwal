@@ -6,6 +6,8 @@ use App\Filament\Resources\FollowUpReminderLogs\Pages\ListFollowUpReminderLogs;
 use App\Models\FollowUpReminder;
 use App\Support\RoleAccess;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -125,8 +127,39 @@ class FollowUpReminderLogResource extends Resource
                         'acknowledged' => 'Selesai',
                     ]),
             ])
-            ->actions([])
-            ->bulkActions([]);
+            ->actions([
+                DeleteAction::make()
+                    ->visible(fn () => auth()->user()?->isAdmin() === true),
+            ])
+            ->toolbarActions([
+                Tables\Actions\BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() === true),
+                ]),
+            ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = FollowUpReminder::query()
+            ->whereNull('acknowledged_at')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = FollowUpReminder::query()
+            ->whereNull('acknowledged_at')
+            ->count();
+
+        return $count > 0 ? "{$count} pengingat aktif belum selesai" : null;
     }
 
     public static function shouldRegisterNavigation(): bool
