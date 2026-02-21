@@ -8,6 +8,7 @@ class BanprovVerification extends Model
 {
     protected $fillable = [
         'tahap',
+        'tahun_anggaran',
         'kecamatan',
         'desa',
         'no_dpa',
@@ -19,6 +20,7 @@ class BanprovVerification extends Model
     ];
 
     protected $casts = [
+        'tahun_anggaran' => 'int',
         'jumlah' => 'int',
         'status_lpj' => 'bool',
         'status_monev' => 'bool',

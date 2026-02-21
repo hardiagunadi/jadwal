@@ -7,6 +7,7 @@ use App\Support\RoleAccess;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -50,6 +51,7 @@ class VerifikasiBanprov extends Page implements HasTable
                     $schema?->fill([
                         'file' => null,
                         'tahap' => null,
+                        'tahun_anggaran' => (string) now()->year,
                     ]);
                 })
                 ->form([
@@ -66,6 +68,13 @@ class VerifikasiBanprov extends Page implements HasTable
                         ->afterStateUpdated(function ($state, Set $set): void {
                             $this->loadPreviewFromFile($state, $set);
                         }),
+                    TextInput::make('tahun_anggaran')
+                        ->label('Tahun Anggaran')
+                        ->numeric()
+                        ->minValue(2020)
+                        ->maxValue(2099)
+                        ->helperText('Diambil otomatis dari file jika tersedia, bisa disesuaikan.')
+                        ->required(),
                     TextInput::make('tahap')
                         ->label('Tahap Pencairan')
                         ->helperText('Diambil otomatis dari file, bisa disesuaikan jika perlu.')
@@ -93,6 +102,9 @@ class VerifikasiBanprov extends Page implements HasTable
             ->query(BanprovVerification::query())
             ->defaultSort('id', 'desc')
             ->columns([
+                Tables\Columns\TextColumn::make('tahun_anggaran')
+                    ->label('Tahun')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('tahap')
                     ->label('Tahap')
                     ->sortable()
@@ -139,6 +151,27 @@ class VerifikasiBanprov extends Page implements HasTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('tahun_anggaran')
+                    ->label('Tahun Anggaran')
+                    ->options(fn () => BanprovVerification::query()
+                        ->whereNotNull('tahun_anggaran')
+                        ->distinct()
+                        ->orderByDesc('tahun_anggaran')
+                        ->pluck('tahun_anggaran', 'tahun_anggaran')
+                        ->mapWithKeys(fn ($tahun) => [(string) $tahun => (string) $tahun])
+                        ->all()
+                    )
+                    ->default((string) now()->year),
+                Tables\Filters\SelectFilter::make('tahap')
+                    ->label('Tahap')
+                    ->options(fn () => BanprovVerification::query()
+                        ->distinct()
+                        ->orderBy('tahap')
+                        ->pluck('tahap', 'tahap')
+                        ->all()
+                    ),
+            ])
             ->actions([
                 Action::make('print_verifikasi')
                     ->label('Cetak Lembar Verifikasi')
@@ -168,6 +201,7 @@ class VerifikasiBanprov extends Page implements HasTable
     {
         $file = $state['file'] ?? null;
         $tahap = trim((string) ($state['tahap'] ?? ''));
+        $tahunAnggaran = (int) ($state['tahun_anggaran'] ?? now()->year);
 
         if (! $file) {
             Notification::make()
@@ -212,6 +246,7 @@ class VerifikasiBanprov extends Page implements HasTable
         foreach ($rows as $row) {
             $payload = [
                 'tahap' => $tahap,
+                'tahun_anggaran' => $tahunAnggaran,
                 'kecamatan' => $row['kecamatan'],
                 'desa' => $row['desa'],
                 'no_dpa' => $row['no_dpa'],
@@ -222,6 +257,7 @@ class VerifikasiBanprov extends Page implements HasTable
 
             BanprovVerification::updateOrCreate(
                 [
+                    'tahun_anggaran' => $tahunAnggaran,
                     'tahap' => $tahap,
                     'kecamatan' => $row['kecamatan'],
                     'desa' => $row['desa'],
@@ -274,6 +310,11 @@ class VerifikasiBanprov extends Page implements HasTable
         if ($this->previewTahap) {
             $set('tahap', $this->previewTahap);
         }
+
+        $detectedTahun = $result['tahun'] ?? null;
+        if ($detectedTahun) {
+            $set('tahun_anggaran', (string) $detectedTahun);
+        }
     }
 
     protected function resetPreview(): void
@@ -285,7 +326,7 @@ class VerifikasiBanprov extends Page implements HasTable
     }
 
     /**
-     * @return array{rows: array<int, array<string, mixed>>, tahap: string|null}
+     * @return array{rows: array<int, array<string, mixed>>, tahap: string|null, tahun: int|null}
      */
     protected function extractBanprovRows(string $path): array
     {
@@ -297,6 +338,7 @@ class VerifikasiBanprov extends Page implements HasTable
         $highestColIndex = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
 
         $tahap = $this->extractTahap($sheet, $highestRow, $highestColIndex);
+        $tahun = $this->extractTahun($sheet, $highestRow, $highestColIndex);
         $headerRow = $this->findHeaderRow($sheet, $highestRow, $highestColIndex);
 
         if (! $headerRow) {
@@ -333,6 +375,7 @@ class VerifikasiBanprov extends Page implements HasTable
         return [
             'rows' => $rows,
             'tahap' => $tahap,
+            'tahun' => $tahun,
         ];
     }
 
@@ -348,6 +391,35 @@ class VerifikasiBanprov extends Page implements HasTable
 
                 if (preg_match('/tahap\\s*([0-9ivx]+)/i', $value, $matches)) {
                     return strtoupper($matches[1]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function extractTahun($sheet, int $highestRow, int $highestColIndex): ?int
+    {
+        $limit = min($highestRow, 12);
+        for ($row = 1; $row <= $limit; $row++) {
+            for ($col = 1; $col <= $highestColIndex; $col++) {
+                $value = trim((string) $sheet->getCellByColumnAndRow($col, $row)->getValue());
+                if ($value === '') {
+                    continue;
+                }
+
+                if (preg_match('/(?:tahun|anggaran|ta)\s*(\d{4})/i', $value, $matches)) {
+                    $year = (int) $matches[1];
+                    if ($year >= 2020 && $year <= 2099) {
+                        return $year;
+                    }
+                }
+
+                if (preg_match('/\b(20\d{2})\b/', $value, $matches)) {
+                    $year = (int) $matches[1];
+                    if ($year >= 2020 && $year <= 2099) {
+                        return $year;
+                    }
                 }
             }
         }
