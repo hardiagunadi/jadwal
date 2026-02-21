@@ -1014,7 +1014,7 @@ class WaGatewayService
     /**
      * @return array{success: bool, response: mixed, error: string|null}
      */
-    protected function sendTextToGroup(string $groupId, string $message, bool $applyVariation = true): array
+    protected function sendTextToGroup(string $groupId, string $message, bool $applyVariation = true, bool $skipAntiSpam = false): array
     {
         $groupId = $this->normalizeGroupId($groupId);
 
@@ -1026,23 +1026,25 @@ class WaGatewayService
             ];
         }
 
-        // Cek kondisi anti-spam
-        $antiSpamCheck = $this->checkAntiSpamConditions();
-        if (! $antiSpamCheck['allowed']) {
-            Log::warning('WA Gateway: pengiriman diblokir oleh anti-spam', [
-                'reason' => $antiSpamCheck['reason'],
-                'group_id' => $groupId,
-            ]);
+        if (! $skipAntiSpam) {
+            // Cek kondisi anti-spam
+            $antiSpamCheck = $this->checkAntiSpamConditions();
+            if (! $antiSpamCheck['allowed']) {
+                Log::warning('WA Gateway: pengiriman diblokir oleh anti-spam', [
+                    'reason' => $antiSpamCheck['reason'],
+                    'group_id' => $groupId,
+                ]);
 
-            return [
-                'success' => false,
-                'error' => $antiSpamCheck['reason'],
-                'response' => null,
-            ];
+                return [
+                    'success' => false,
+                    'error' => $antiSpamCheck['reason'],
+                    'response' => null,
+                ];
+            }
+
+            // Terapkan delay anti-spam
+            $this->applyAntiSpamDelay();
         }
-
-        // Terapkan delay anti-spam
-        $this->applyAntiSpamDelay();
 
         // Tambahkan variasi pesan untuk menghindari deteksi spam
         $finalMessage = $applyVariation ? $this->appendMessageVariation($message) : $message;
@@ -1115,6 +1117,15 @@ class WaGatewayService
     public function sendTextToSpecificGroup(string $groupId, string $message): array
     {
         return $this->sendTextToGroup($groupId, $message);
+    }
+
+    /**
+     * Kirim balasan ke group tanpa anti-spam check.
+     * Khusus untuk respon langsung terhadap pesan user (webhook reply).
+     */
+    public function sendReplyToGroup(string $groupId, string $message): array
+    {
+        return $this->sendTextToGroup($groupId, $message, applyVariation: false, skipAntiSpam: true);
     }
 
     /**

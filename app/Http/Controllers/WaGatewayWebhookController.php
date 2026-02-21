@@ -114,11 +114,12 @@ class WaGatewayWebhookController extends Controller
             $unauthMessage = 'Mohon maaf anda bukan penerima disposisi, mohon koordinasi dengan personil terkait untuk penyelesaian TL';
 
             if ($incomingGroupIdRaw ?? $incomingGroupId) {
-                $waGateway->sendTextToSpecificGroup($incomingGroupIdRaw ?? $incomingGroupId, $unauthMessage);
+                $waGateway->sendReplyToGroup($incomingGroupIdRaw ?? $incomingGroupId, $unauthMessage);
             } else {
                 $waGateway->sendPersonalText(
                     [$this->normalizeNumber($senderDigits)],
-                    $unauthMessage
+                    $unauthMessage,
+                    applyVariation: false
                 );
             }
 
@@ -129,11 +130,12 @@ class WaGatewayWebhookController extends Controller
             $infoMessage = $this->buildTlAlreadyCompletedMessage($kegiatan);
 
             if ($incomingGroupIdRaw ?? $incomingGroupId) {
-                $waGateway->sendTextToSpecificGroup($incomingGroupIdRaw ?? $incomingGroupId, $infoMessage);
+                $waGateway->sendReplyToGroup($incomingGroupIdRaw ?? $incomingGroupId, $infoMessage);
             } else {
                 $waGateway->sendPersonalText(
                     [$this->normalizeNumber($senderDigits)],
-                    $infoMessage
+                    $infoMessage,
+                    applyVariation: false
                 );
             }
 
@@ -155,11 +157,11 @@ class WaGatewayWebhookController extends Controller
         $sent = false;
 
         if ($incomingGroupIdRaw ?? $incomingGroupId) {
-            $result = $waGateway->sendTextToSpecificGroup($incomingGroupIdRaw ?? $incomingGroupId, $thanksMessage);
+            $result = $waGateway->sendReplyToGroup($incomingGroupIdRaw ?? $incomingGroupId, $thanksMessage);
             $sent = (bool) ($result['success'] ?? false);
         } elseif (! empty($targetGroupPhones)) {
             foreach ($targetGroupPhones as $phone) {
-                $result = $waGateway->sendTextToSpecificGroup($phone, $thanksMessage);
+                $result = $waGateway->sendReplyToGroup($phone, $thanksMessage);
                 if ($result['success'] ?? false) {
                     $sent = true;
                 }
