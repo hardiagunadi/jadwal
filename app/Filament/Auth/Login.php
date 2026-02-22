@@ -6,7 +6,10 @@ use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\View;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use SensitiveParameter;
 
@@ -87,6 +90,35 @@ class Login extends BaseLogin
                 $this->getEmailFormComponent(),
                 $this->getPasswordFormComponent(),
                 $this->getRememberFormComponent(),
+                View::make('filament.components.recaptcha-v2'),
+                TextInput::make('g_recaptcha_response')
+                    ->hidden()
+                    ->dehydrated(),
             ]);
+    }
+
+    public function authenticate(): ?LoginResponse
+    {
+        $token = $this->data['g_recaptcha_response'] ?? '';
+
+        if (empty($token)) {
+            throw ValidationException::withMessages([
+                'data.nip' => 'Harap selesaikan verifikasi reCAPTCHA terlebih dahulu.',
+            ]);
+        }
+
+        $result = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => config('services.recaptcha.secret_key'),
+            'response' => $token,
+            'remoteip' => request()->ip(),
+        ]);
+
+        if (! ($result->json('success') ?? false)) {
+            throw ValidationException::withMessages([
+                'data.nip' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
+            ]);
+        }
+
+        return parent::authenticate();
     }
 }
