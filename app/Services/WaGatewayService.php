@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 
 class WaGatewayService
 {
-    protected const WA_WRAP_WIDTH = 48;
+    protected const WA_WRAP_WIDTH = 40;
 
     protected string $baseUrl;
     protected string $token;
@@ -1379,6 +1379,7 @@ class WaGatewayService
 
         $lines[] = '';
         $lines[] = '_Harap laporkan hasilnya kepada Pimpinan_';
+        $lines[] = '_Simpan Nomor ini jika link/alamat tidak bisa dibuka_';
 
         $fallback = implode("\n", $lines);
 
@@ -1582,6 +1583,7 @@ class WaGatewayService
             $lines[] = '_Tidak ada agenda yang berstatus menunggu disposisi._';
         } else {
             $lines[] = '_Mohon tindak lanjut disposisi sesuai kewenangan._';
+            $lines[] = '_Simpan nomor ini jika link/alamat tidak bisa dibuka._';
         }
 
         $includeTag = $this->includePersonilTagForTemplate('group_belum_disposisi');
