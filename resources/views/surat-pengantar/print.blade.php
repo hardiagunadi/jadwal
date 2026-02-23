@@ -7,14 +7,14 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 15mm 20mm 20mm 25mm;
+            margin: 5mm 20mm 20mm 25mm;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: "Times New Roman", Times, serif;
-            font-size: 11pt;
+            font-family: "Arial", Times, serif;
+            font-size: 12pt;
             color: #000;
             background: #fff;
         }
@@ -27,6 +27,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .no-print button {
             padding: 5px 16px;
@@ -40,7 +41,25 @@
         .no-print button.btn-back {
             background: #64748b;
         }
-        .no-print span {
+        .no-print label.ttd-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 8.5pt;
+            color: #334155;
+            cursor: pointer;
+            user-select: none;
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            border-radius: 4px;
+            padding: 4px 10px;
+        }
+        .no-print label.ttd-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+        .no-print span.hint {
             font-size: 8pt;
             color: #64748b;
         }
@@ -180,28 +199,33 @@
         .penerima-baris {
             margin-bottom: 2mm;
         }
-        .penerima-garis {
-            display: block;
-            width: 55mm;
-            border-bottom: 1pt solid #000;
-            margin-top: 14mm;
-            margin-bottom: 1mm;
+        /* ruang kosong tanda tangan penerima */
+        .ttd-ruang-penerima {
+            height: 16mm;
         }
-        .penerima-garis2 {
-            display: block;
-            width: 55mm;
-            border-bottom: 1pt solid #000;
-            margin-top: 6mm;
-            margin-bottom: 1mm;
+        /* kode srikandi */
+        .srikandi-code {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 9pt;
+            color: #1e40af;
+            margin-bottom: 2mm;
+            display: none; /* ditampilkan via JS saat toggle aktif */
+        }
+        .ttd-ruang-pengirim {
+            height: 16mm;
         }
     </style>
 </head>
 <body>
     {{-- Toolbar --}}
     <div class="no-print">
+        <label class="ttd-toggle" title="Tambahkan kode TTD Srikandi pada area tanda tangan pengirim">
+            <input type="checkbox" id="toggleSrikandi" onchange="toggleSrikandiMode(this.checked)">
+            &#9997; TTD Srikandi
+        </label>
         <button onclick="window.print()">&#128438; Cetak / Simpan PDF</button>
         <button class="btn-back" onclick="history.back()">&#8592; Kembali</button>
-        <span>Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
+        <span class="hint">Pilih "Save as PDF" pada dialog cetak untuk menyimpan sebagai PDF.</span>
     </div>
 
     <div class="page">
@@ -269,9 +293,8 @@
             <div class="col-penerima">
                 <div class="penerima-baris">Diterima tanggal …………………..</div>
                 <div class="penerima-baris">Penerima</div>
-                <span class="penerima-garis"></span>
+                <div class="ttd-ruang-penerima"></div>
                 <div style="margin-bottom:1mm;">…………………………………….</div>
-                <span class="penerima-garis2"></span>
                 <div style="margin-bottom:4mm;">…………………………………….</div>
                 <div>Nomor telepon / WA …………………</div>
             </div>
@@ -280,7 +303,9 @@
             <div class="col-pengirim">
                 <div>Pengirim</div>
                 <div>{{ $jabatan }}</div>
-                <div class="ttd-garis" style="margin-top:16mm;"></div>
+                <div id="srikandi-code" class="srikandi-code">${ttd_pengirim}</div>
+                <div class="ttd-ruang-pengirim" id="ttd-ruang-pengirim"></div>
+                <div class="ttd-garis" id="ttd-garis-pengirim"></div>
                 <div class="ttd-nama">{{ $nama_camat }}</div>
                 <div>{{ $pangkat }} / {{ $golongan }}</div>
                 <div>NIP. {{ $nip }}</div>
@@ -290,6 +315,23 @@
     </div>{{-- /.page --}}
 
     <script>
+        function toggleSrikandiMode(enabled) {
+            var code  = document.getElementById('srikandi-code');
+            var ruang = document.getElementById('ttd-ruang-pengirim');
+            var garis = document.getElementById('ttd-garis-pengirim');
+
+            if (enabled) {
+                // Tampilkan kode Srikandi, kurangi ruang TTD supaya tidak terlalu kosong
+                code.style.display  = 'block';
+                ruang.style.height  = '4mm';
+                garis.style.display = 'none';
+            } else {
+                code.style.display  = 'none';
+                ruang.style.height  = '16mm';
+                garis.style.display = 'block';
+            }
+        }
+
         window.addEventListener('load', function () {
             window.print();
         });
