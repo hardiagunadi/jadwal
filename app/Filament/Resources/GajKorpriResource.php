@@ -71,7 +71,6 @@ class GajKorpriResource extends Resource
                 ->multiple()
                 ->searchable()
                 ->options($createOptions)
-                ->dehydrated(false)   // ditangani manual di handleRecordCreation()
                 ->hiddenOn('edit'),
 
             // Single select: hanya pada edit, disimpan ke kolom nip
