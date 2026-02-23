@@ -365,9 +365,10 @@ class SuratKeluarResource extends Resource
                                 ->visible(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya')
                                 ->required(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya'),
 
-                            TextInput::make('kepada')
+                            Textarea::make('kepada')
                                 ->label('Kepada (Yth.)')
                                 ->placeholder('Bupati Wonosobo')
+                                ->rows(2)
                                 ->required(),
 
                             Textarea::make('isi_pengantar')

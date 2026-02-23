@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 5mm 20mm 20mm 25mm;
+            margin: 0mm 20mm 20mm 25mm;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -117,7 +117,7 @@
         .page {
             max-width: 170mm;
             margin: 0 auto;
-            padding: 10mm 0;
+            padding: 0mm 0;
         }
 
         /* ── header kop surat ─────────────────────────────────── */
