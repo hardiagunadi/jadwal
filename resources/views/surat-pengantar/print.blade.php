@@ -188,8 +188,6 @@
             text-align: center;
         }
         .ttd-garis {
-            border-bottom: 1pt solid #000;
-            margin-top: 12mm;
             margin-bottom: 2mm;
         }
         .ttd-nama {
@@ -203,16 +201,23 @@
         .ttd-ruang-penerima {
             height: 16mm;
         }
-        /* kode srikandi */
+        /* ruang TTD biasa (tanpa srikandi) */
+        .ttd-ruang-pengirim {
+            height: 22mm;
+        }
+        /* wrapper srikandi — tinggi sama dengan ruang TTD biasa,
+           flex agar kode tepat di tengah secara vertikal & horizontal */
+        .srikandi-wrapper {
+            display: none;
+            height: 25mm;
+            align-items: center;
+            justify-content: center;
+        }
         .srikandi-code {
             font-family: "Courier New", Courier, monospace;
             font-size: 9pt;
             color: #1e40af;
-            margin-bottom: 2mm;
-            display: none; /* ditampilkan via JS saat toggle aktif */
-        }
-        .ttd-ruang-pengirim {
-            height: 16mm;
+            line-height: 1;
         }
     </style>
 </head>
@@ -254,7 +259,7 @@
 
         {{-- KEPADA --}}
         <div class="kepada-blok">
-            Yth. {{ $kepada }}<br>
+            Yth. {!! nl2br(e($kepada)) !!}<br>
             di<br>
             <span class="tempat">TEMPAT</span>
         </div>
@@ -303,9 +308,18 @@
             <div class="col-pengirim">
                 <div>Pengirim</div>
                 <div>{{ $jabatan }}</div>
-                <div id="srikandi-code" class="srikandi-code">${ttd_pengirim}</div>
-                <div class="ttd-ruang-pengirim" id="ttd-ruang-pengirim"></div>
-                <div class="ttd-garis" id="ttd-garis-pengirim"></div>
+
+                {{-- Ruang TTD normal (garis bawah) --}}
+                <div id="ttd-normal">
+                    <div class="ttd-ruang-pengirim"></div>
+                    <div class="ttd-garis"></div>
+                </div>
+
+                {{-- Ruang TTD Srikandi: kode tepat di tengah antara jabatan & nama --}}
+                <div id="ttd-srikandi" class="srikandi-wrapper">
+                    <span class="srikandi-code">${ttd_pengirim}</span>
+                </div>
+
                 <div class="ttd-nama">{{ $nama_camat }}</div>
                 <div>{{ $pangkat }} / {{ $golongan }}</div>
                 <div>NIP. {{ $nip }}</div>
@@ -316,19 +330,15 @@
 
     <script>
         function toggleSrikandiMode(enabled) {
-            var code  = document.getElementById('srikandi-code');
-            var ruang = document.getElementById('ttd-ruang-pengirim');
-            var garis = document.getElementById('ttd-garis-pengirim');
+            var normal   = document.getElementById('ttd-normal');
+            var srikandi = document.getElementById('ttd-srikandi');
 
             if (enabled) {
-                // Tampilkan kode Srikandi, kurangi ruang TTD supaya tidak terlalu kosong
-                code.style.display  = 'block';
-                ruang.style.height  = '4mm';
-                garis.style.display = 'none';
+                normal.style.display   = 'none';
+                srikandi.style.display = 'flex';
             } else {
-                code.style.display  = 'none';
-                ruang.style.height  = '16mm';
-                garis.style.display = 'block';
+                normal.style.display   = 'block';
+                srikandi.style.display = 'none';
             }
         }
 
