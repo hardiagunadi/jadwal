@@ -15,6 +15,7 @@ use App\Http\Controllers\BanprovVerificationController;
 use App\Http\Controllers\BkuController;
 use App\Http\Controllers\GajExportController;
 use App\Http\Controllers\SpjController;
+use App\Http\Controllers\SuratPengantarController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 // routes/web.php
@@ -73,6 +74,9 @@ Route::get('/banprov/verifikasi/{verification}/print', [BanprovVerificationContr
 Route::get('/spj/{spj}/kwitansi', [SpjController::class, 'cetak'])
     ->middleware('auth:personil')
     ->name('spj.kwitansi.cetak');
+Route::get('/surat-pengantar/print', [SuratPengantarController::class, 'print'])
+    ->middleware('auth:personil')
+    ->name('surat-pengantar.print');
 Route::get('/kegiatan/disposisi/print', [KegiatanDisposisiController::class, 'bulk'])
     ->middleware('auth:personil')
     ->name('kegiatan.disposisi.bulk');

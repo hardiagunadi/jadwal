@@ -1,3 +1,4 @@
+@if(config('services.recaptcha.site_key') && config('services.recaptcha.secret_key'))
 <div
     x-data="{
         init() {
@@ -22,3 +23,4 @@
 @once
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 @endonce
+@endif

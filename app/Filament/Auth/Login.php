@@ -97,26 +97,34 @@ class Login extends BaseLogin
             ]);
     }
 
+    protected function isRecaptchaEnabled(): bool
+    {
+        return ! empty(config('services.recaptcha.site_key'))
+            && ! empty(config('services.recaptcha.secret_key'));
+    }
+
     public function authenticate(): ?LoginResponse
     {
-        $token = $this->data['g_recaptcha_response'] ?? '';
+        if ($this->isRecaptchaEnabled()) {
+            $token = $this->data['g_recaptcha_response'] ?? '';
 
-        if (empty($token)) {
-            throw ValidationException::withMessages([
-                'data.nip' => 'Harap selesaikan verifikasi reCAPTCHA terlebih dahulu.',
+            if (empty($token)) {
+                throw ValidationException::withMessages([
+                    'data.nip' => 'Harap selesaikan verifikasi reCAPTCHA terlebih dahulu.',
+                ]);
+            }
+
+            $result = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret'   => config('services.recaptcha.secret_key'),
+                'response' => $token,
+                'remoteip' => request()->ip(),
             ]);
-        }
 
-        $result = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => config('services.recaptcha.secret_key'),
-            'response' => $token,
-            'remoteip' => request()->ip(),
-        ]);
-
-        if (! ($result->json('success') ?? false)) {
-            throw ValidationException::withMessages([
-                'data.nip' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
-            ]);
+            if (! ($result->json('success') ?? false)) {
+                throw ValidationException::withMessages([
+                    'data.nip' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.',
+                ]);
+            }
         }
 
         return parent::authenticate();

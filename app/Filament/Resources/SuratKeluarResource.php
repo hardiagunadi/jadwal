@@ -11,6 +11,8 @@ use App\Models\SuratKeluar;
 use App\Models\SeksiModul;
 use App\Support\RoleAccess;
 use BackedEnum;
+use Carbon\Carbon;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -25,6 +27,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 class SuratKeluarResource extends Resource
@@ -332,6 +336,140 @@ class SuratKeluarResource extends Resource
             ])
             ->bulkActions([
                 DeleteBulkAction::make(),
+                BulkAction::make('surat_pengantar')
+                    ->label('Generate Surat Pengantar')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->deselectRecordsAfterCompletion()
+                    ->form(function () {
+                        $jabatanCamat = env('JADWAL_JABATAN_CAMAT', 'Camat Watumalang');
+                        $camat = Personil::where('jabatan', $jabatanCamat)->first();
+
+                        return [
+                            Select::make('jenis_surat_pilihan')
+                                ->label('Jenis Surat')
+                                ->options([
+                                    'Surat Pengantar'   => 'Surat Pengantar',
+                                    'Nota Dinas'        => 'Nota Dinas',
+                                    'Surat Keterangan'  => 'Surat Keterangan',
+                                    'Surat Permohonan'  => 'Surat Permohonan',
+                                    'lainnya'           => 'Lainnya (ketik sendiri)…',
+                                ])
+                                ->default('Surat Pengantar')
+                                ->required()
+                                ->live(),
+
+                            TextInput::make('jenis_surat_custom')
+                                ->label('Jenis Surat (ketik manual)')
+                                ->placeholder('Contoh: Surat Pengantar Berkas…')
+                                ->visible(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya')
+                                ->required(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya'),
+
+                            TextInput::make('kepada')
+                                ->label('Kepada (Yth.)')
+                                ->placeholder('Bupati Wonosobo')
+                                ->required(),
+
+                            Textarea::make('isi_pengantar')
+                                ->label('Isi Pengantar (Jenis Surat/Barang yang Dikirim)')
+                                ->placeholder('Contoh: Laporan Keuangan Bulan Januari 2025')
+                                ->rows(4)
+                                ->required(),
+
+                            Select::make('pegawai_ids')
+                                ->label('Tambah Daftar Pegawai ke Isi Pengantar (Opsional)')
+                                ->multiple()
+                                ->options(fn () => Personil::query()
+                                    ->orderBy('nama')
+                                    ->get()
+                                    ->mapWithKeys(fn (Personil $p) => [
+                                        $p->id => $p->nama . ($p->nip ? ' – NIP. ' . $p->nip : ''),
+                                    ])
+                                    ->all())
+                                ->searchable()
+                                ->helperText('Jika dipilih, nama dan NIP pegawai akan ditambahkan ke teks isi pengantar.')
+                                ->nullable(),
+
+                            DatePicker::make('tanggal')
+                                ->label('Tanggal Surat')
+                                ->default(now())
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->helperText('Otomatis terisi hari ini. Ubah jika perlu.'),
+
+                            Placeholder::make('info_pengirim')
+                                ->label('Informasi Pengirim (Otomatis dari sistem)')
+                                ->content(function () use ($jabatanCamat, $camat) {
+                                    return implode('  |  ', [
+                                        'Jabatan: ' . $jabatanCamat,
+                                        'Nama: ' . ($camat?->nama ?? '–'),
+                                        'Pangkat/Gol: ' . ($camat?->pangkat ?? '–') . ' / ' . ($camat?->golongan ?? '–'),
+                                        'NIP: ' . ($camat?->nip ?? '–'),
+                                    ]);
+                                }),
+                        ];
+                    })
+                    ->action(function (Collection $records, array $data) {
+                        $jabatanCamat = env('JADWAL_JABATAN_CAMAT', 'Camat Watumalang');
+                        $camat        = Personil::where('jabatan', $jabatanCamat)->first();
+
+                        // Jenis surat
+                        $jenisSurat = $data['jenis_surat_pilihan'] === 'lainnya'
+                            ? trim((string) ($data['jenis_surat_custom'] ?? 'Surat Pengantar'))
+                            : $data['jenis_surat_pilihan'];
+
+                        // Nomor surat dari semua record yang dipilih
+                        $nomors = $records->map(function (SuratKeluar $record) {
+                            $label   = $record->nomor_label;
+                            $akronim = trim((string) ($record->requester?->jabatan_akronim ?? ''));
+
+                            return $akronim ? $label . '/' . $akronim : $label;
+                        })->implode(', ');
+
+                        // Isi pengantar + daftar pegawai
+                        $isiPengantar = trim((string) ($data['isi_pengantar'] ?? ''));
+                        $pegawaiIds   = $data['pegawai_ids'] ?? [];
+
+                        if (! empty($pegawaiIds)) {
+                            $pegawais     = Personil::whereIn('id', $pegawaiIds)->orderBy('nama')->get();
+                            $banyak       = $pegawais->count();
+                            $pegawaiLines = $pegawais->values()->map(function (Personil $p, int $idx) use ($banyak) {
+                                $nip   = $p->nip ? ' (NIP. ' . $p->nip . ')' : '';
+                                $label = $p->nama . $nip;
+
+                                return $banyak > 1 ? ($idx + 1) . '. ' . $label : $label;
+                            })->implode("\n");
+
+                            $isiPengantar = $isiPengantar !== ''
+                                ? $isiPengantar . "\n" . $pegawaiLines
+                                : $pegawaiLines;
+                        }
+
+                        // Tanggal
+                        $tanggal = Carbon::parse($data['tanggal'] ?? now())
+                            ->locale('id')
+                            ->isoFormat('D MMMM Y');
+
+                        // Simpan ke session
+                        $key = Str::uuid()->toString();
+                        session()->put('surat_pengantar_' . $key, [
+                            'jenis_surat'  => $jenisSurat,
+                            'kepada'       => $data['kepada'],
+                            'isi_pengantar'=> $isiPengantar,
+                            'tanggal'      => $tanggal,
+                            'nomor_surat'  => $nomors,
+                            'jabatan'      => $jabatanCamat,
+                            'nama_camat'   => $camat?->nama   ?? '–',
+                            'pangkat'      => $camat?->pangkat ?? '–',
+                            'golongan'     => $camat?->golongan ?? '–',
+                            'nip'          => $camat?->nip ?? '–',
+                        ]);
+
+                        session()->put('surat_pengantar_latest_key', $key);
+                    })
+                    ->successRedirectUrl(fn (): string => route('surat-pengantar.print', [
+                        'key' => session('surat_pengantar_latest_key'),
+                    ])),
             ]);
     }
 
