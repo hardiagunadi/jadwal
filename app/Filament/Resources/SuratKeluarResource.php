@@ -337,7 +337,7 @@ class SuratKeluarResource extends Resource
             ->bulkActions([
                 DeleteBulkAction::make(),
                 BulkAction::make('surat_pengantar')
-                    ->label('Generate Surat Pengantar')
+                    ->label('Generate Surat')
                     ->icon('heroicon-o-document-text')
                     ->color('info')
                     ->deselectRecordsAfterCompletion()
