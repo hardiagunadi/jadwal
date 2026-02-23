@@ -434,10 +434,19 @@ class SuratKeluarResource extends Resource
                             $pegawais     = Personil::whereIn('id', $pegawaiIds)->orderBy('nama')->get();
                             $banyak       = $pegawais->count();
                             $pegawaiLines = $pegawais->values()->map(function (Personil $p, int $idx) use ($banyak) {
-                                $nip   = $p->nip ? ' (NIP. ' . $p->nip . ')' : '';
-                                $label = $p->nama . $nip;
+                                $nama  = $p->nama ?? '';
+                                $nip   = $p->nip ? 'NIP. ' . $p->nip : '';
 
-                                return $banyak > 1 ? ($idx + 1) . '. ' . $label : $label;
+                                if ($banyak > 1) {
+                                    // "1. Nama\n   NIP. ..."
+                                    $prefix = ($idx + 1) . '. ';
+                                    $indent = str_repeat(' ', strlen($prefix));
+                                    return $nip !== ''
+                                        ? $prefix . $nama . "\n" . $indent . $nip
+                                        : $prefix . $nama;
+                                }
+
+                                return $nip !== '' ? $nama . "\n" . $nip : $nama;
                             })->implode("\n");
 
                             $isiPengantar = $isiPengantar !== ''
