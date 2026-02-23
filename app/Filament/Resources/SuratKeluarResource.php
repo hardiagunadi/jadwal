@@ -365,6 +365,23 @@ class SuratKeluarResource extends Resource
                                 ->visible(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya')
                                 ->required(fn (callable $get) => $get('jenis_surat_pilihan') === 'lainnya'),
 
+                            Select::make('kepada_template')
+                                ->label('Template Kepada (opsional)')
+                                ->placeholder('— Pilih template atau ketik manual di bawah —')
+                                ->options([
+                                    'Kepala BPPKAD Kabupaten Wonosobo'  => 'Kepala BPPKAD Kabupaten Wonosobo',
+                                    'Kepala BKD Kabupaten Wonosobo'     => 'Kepala BKD Kabupaten Wonosobo',
+                                    'Bupati Wonosobo'                   => 'Bupati Wonosobo',
+                                    'Sekretaris Daerah Kabupaten Wonosobo' => 'Sekretaris Daerah Kabupaten Wonosobo',
+                                ])
+                                ->live()
+                                ->afterStateUpdated(function (?string $state, callable $set) {
+                                    if ($state) {
+                                        $set('kepada', $state);
+                                    }
+                                })
+                                ->helperText('Pilih untuk mengisi otomatis field di bawah, lalu bisa diedit bebas.'),
+
                             Textarea::make('kepada')
                                 ->label('Kepada (Yth.)')
                                 ->placeholder('Bupati Wonosobo')
