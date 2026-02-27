@@ -511,7 +511,7 @@
             <tr>
                 <td class="label">Lampiran</td>
                 <td class="sep">:</td>
-                <td>2 (dua) Lembar</td>
+                <td>1 (satu) Lembar</td>
             </tr>
             <tr>
                 <td class="label">Perihal</td>
@@ -783,7 +783,7 @@
                 <tr>
                     <td>1</td>
                     <td class="l">PT BPR BANK WONOSOBO PERSERODA</td>
-                    <td>-</td>
+                    <td>{{ $REK_GAJI }}-</td>
                     <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
                 </tr>
