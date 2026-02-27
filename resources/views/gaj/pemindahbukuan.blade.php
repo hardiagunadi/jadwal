@@ -783,7 +783,7 @@
                 <tr>
                     <td>1</td>
                     <td class="l">PT BPR BANK WONOSOBO PERSERODA</td>
-                    <td>{{ $REK_GAJI }}-</td>
+                    <td>{{ $REK_GAJI }}</td>
                     <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
                 </tr>
