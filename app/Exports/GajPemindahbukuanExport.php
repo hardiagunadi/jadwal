@@ -1062,7 +1062,7 @@ class GajPemindahbukuanExport
         $sheet->getRowDimension(1)->setRowHeight(14);
         $sheet->getRowDimension(2)->setRowHeight(18);
         $sheet->getRowDimension(6)->setRowHeight(10);
-        $sheet->getRowDimension(7)->setRowHeight(4);
+        $sheet->getRowDimension(7)->setRowHeight(2);
 
         // Garis bawah kop: border bawah tebal di row 6, border bawah tipis di row 7
         $sheet->getStyle("A6:{$lastCol}6")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM);
