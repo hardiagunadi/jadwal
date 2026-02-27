@@ -256,8 +256,8 @@
         } else {
             // Bank Jateng surat: gaji Jateng + transfer ke Bank Wonosobo + BAZNAS all + KORPRI all
             $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznas + $sumKorpri;
-            // Bank Wonosobo surat: gaji Wonosobo only
-            $totalSuratWonosobo = $sumBersihWonosobo;
+            // Bank Wonosobo surat: gaji Wonosobo + BAZNAS Wonosobo + KORPRI Wonosobo
+            $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
         }
     @endphp
 
@@ -871,6 +871,20 @@
                     <td>-</td>
                     <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td class="l">BAZNAS</td>
+                    <td>{{ $REK_BAZNAS }}</td>
+                    <td>BAZNAS</td>
+                    <td class="r">{{ $rp($sumBaznasWonosobo) }}</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td class="l">KORPRI KAB. WONOSOBO</td>
+                    <td>{{ $REK_KORPRI }}</td>
+                    <td>Bank Wonosobo</td>
+                    <td class="r">{{ $rp($sumKorpriWonosobo) }}</td>
                 </tr>
                 <tr class="b">
                     <td class="b" colspan="4"><strong>Jumlah</strong></td>

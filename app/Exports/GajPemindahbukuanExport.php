@@ -9,6 +9,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -216,19 +217,15 @@ class GajPemindahbukuanExport
         $sheet->setCellValue('J34', $total);
         $sheet->getStyle('A34:K34')->getFont()->setBold(true);
 
-        // ── Empty row 35 with borders ───────────────────────────────────────
-        $sheet->mergeCells('B35:E35');
-        $sheet->mergeCells('J35:K35');
-
-        // ── Borders for data rows 31-35 ─────────────────────────────────────
-        $sheet->getStyle('A31:K35')->applyFromArray(self::BORDER_THIN);
+        // ── Borders for data rows 31-34 ─────────────────────────────────────
+        $sheet->getStyle('A31:K34')->applyFromArray(self::BORDER_THIN);
 
         // ── Number format & alignment for Jumlah column ─────────────────────
         $sheet->getStyle('J31:K34')->getNumberFormat()->setFormatCode('#,##0');
         $sheet->getStyle('J31:K34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         // ── Center No. column ───────────────────────────────────────────────
-        $sheet->getStyle('A31:A35')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A31:A34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A34:G34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── Closing text ────────────────────────────────────────────────────
@@ -396,9 +393,10 @@ class GajPemindahbukuanExport
         );
 
         // Sheet 2: BAWON — surat ke Bank Wonosobo
+        $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
         $bawon = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BAWON');
         $spreadsheet->addSheet($bawon);
-        $this->buildBawonPppk($bawon, $gaj, $sumBersihWonosobo);
+        $this->buildBawonPppk($bawon, $gaj, $totalSuratWonosobo, $sumBersihWonosobo, $sumBaznasWonosobo, $sumKorpriWonosobo);
 
         // Sheet 3: LAMPIRAN BANK JATENG
         $lampiranJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'LAMPIRAN JATENG');
@@ -569,26 +567,20 @@ class GajPemindahbukuanExport
         $sheet->mergeCells("J{$r}:K{$r}");
         $sheet->setCellValue("J{$r}", $total);
         $sheet->getStyle("A{$r}:K{$r}")->getFont()->setBold(true);
+        $jumlahRow = $r;
         $r++;
 
-        // ── Empty row with borders ──────────────────────────────────────────
-        $sheet->mergeCells("B{$r}:E{$r}");
-        $sheet->mergeCells("J{$r}:K{$r}");
-        $emptyRow = $r;
-        $r++;
-
-        // ── Borders for data + total + empty rows ───────────────────────────
-        $sheet->getStyle("A31:K{$emptyRow}")->applyFromArray(self::BORDER_THIN);
+        // ── Borders for data + total rows ───────────────────────────────────
+        $sheet->getStyle("A31:K{$jumlahRow}")->applyFromArray(self::BORDER_THIN);
 
         // ── Number format & alignment ───────────────────────────────────────
-        $jumlahRow = $emptyRow - 1;
         $sheet->getStyle("J31:K{$jumlahRow}")->getNumberFormat()->setFormatCode('#,##0');
         $sheet->getStyle("J31:K{$jumlahRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle("A31:A{$emptyRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A31:A{$jumlahRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle("A{$jumlahRow}:G{$jumlahRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── Closing text ────────────────────────────────────────────────────
-        $closingRow = $emptyRow + 2;
+        $closingRow = $jumlahRow + 2;
         $sheet->setCellValue("A{$closingRow}", '     Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
         $sheet->setCellValue('A' . ($closingRow + 1), 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
 
@@ -600,7 +592,7 @@ class GajPemindahbukuanExport
         $this->setTtdSurat($sheet, $closingRow2 + 2, 'K');
     }
 
-    private function buildBawonPppk($sheet, Gaj $gaj, int $sumBersihWonosobo): void
+    private function buildBawonPppk($sheet, Gaj $gaj, int $total, int $sumBersihWonosobo, int $sumBaznas, int $sumKorpri): void
     {
         $bulanNama = self::BULAN_NAMES[$gaj->bulan] ?? '';
         $tahun     = $gaj->tahun;
@@ -662,7 +654,7 @@ class GajPemindahbukuanExport
 
         $sheet->setCellValue('A26', 'Atas nama             : ');
         $sheet->setCellValue('D26', 'Bendahara Gaji Kantor Kecamatan Watumalang');
-        $sheet->setCellValue('A27', 'Jumlah                  : Rp. ' . number_format($sumBersihWonosobo, 0, ',', '.'));
+        $sheet->setCellValue('A27', 'Jumlah                  : Rp. ' . number_format($total, 0, ',', '.'));
         $sheet->setCellValue('A28', 'Untuk dipindahkan kedalam rekening di bawah ini :');
 
         // ── Table header (rows 29-30, 2-row merged) ─────────────────────────
@@ -698,36 +690,54 @@ class GajPemindahbukuanExport
         $sheet->mergeCells('J31:K31');
         $sheet->setCellValue('J31', $sumBersihWonosobo);
 
-        // ── Jumlah row ──────────────────────────────────────────────────────
-        $sheet->mergeCells('A32:G32');
-        $sheet->setCellValue('A32', 'Jumlah');
+        // ── Data row 2: BAZNAS ──────────────────────────────────────────────
+        $sheet->setCellValue('A32', '2');
+        $sheet->mergeCells('B32:E32');
+        $sheet->setCellValue('B32', 'BAZNAS');
+        $sheet->mergeCells('F32:G32');
+        $sheet->setCellValue('F32', self::REK_BAZNAS);
         $sheet->mergeCells('H32:I32');
+        $sheet->setCellValue('H32', 'BAZNAS');
         $sheet->mergeCells('J32:K32');
-        $sheet->setCellValue('J32', $sumBersihWonosobo);
-        $sheet->getStyle('A32:K32')->getFont()->setBold(true);
+        $sheet->setCellValue('J32', $sumBaznas);
 
-        // ── Empty row 33 with borders ───────────────────────────────────────
+        // ── Data row 3: KORPRI ──────────────────────────────────────────────
+        $sheet->setCellValue('A33', '3');
         $sheet->mergeCells('B33:E33');
+        $sheet->setCellValue('B33', 'KORPRI KAB. WONOSOBO');
+        $sheet->mergeCells('F33:G33');
+        $sheet->setCellValue('F33', self::REK_KORPRI);
+        $sheet->mergeCells('H33:I33');
+        $sheet->setCellValue('H33', 'Bank Wonosobo');
         $sheet->mergeCells('J33:K33');
+        $sheet->setCellValue('J33', $sumKorpri);
 
-        // ── Borders for data rows 31-33 ─────────────────────────────────────
-        $sheet->getStyle('A31:K33')->applyFromArray(self::BORDER_THIN);
+        // ── Jumlah row ──────────────────────────────────────────────────────
+        $sheet->mergeCells('A34:G34');
+        $sheet->setCellValue('A34', 'Jumlah');
+        $sheet->mergeCells('H34:I34');
+        $sheet->mergeCells('J34:K34');
+        $sheet->setCellValue('J34', $total);
+        $sheet->getStyle('A34:K34')->getFont()->setBold(true);
+
+        // ── Borders for data rows 31-34 ─────────────────────────────────────
+        $sheet->getStyle('A31:K34')->applyFromArray(self::BORDER_THIN);
 
         // ── Number format & alignment ───────────────────────────────────────
-        $sheet->getStyle('J31:K32')->getNumberFormat()->setFormatCode('#,##0');
-        $sheet->getStyle('J31:K32')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('A31:A33')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A32:G32')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('J31:K34')->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('J31:K34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('A31:A34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A34:G34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── Closing text ────────────────────────────────────────────────────
-        $sheet->setCellValue('A37', '     Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
-        $sheet->setCellValue('A38', 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
+        $sheet->setCellValue('A39', '     Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
+        $sheet->setCellValue('A40', 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
 
-        $sheet->mergeCells('A40:K40');
-        $sheet->setCellValue('A40', 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
+        $sheet->mergeCells('A42:K42');
+        $sheet->setCellValue('A42', 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
 
         // ── TTD ─────────────────────────────────────────────────────────────
-        $this->setTtdSurat($sheet, 42, 'K');
+        $this->setTtdSurat($sheet, 44, 'K');
     }
 
     private function buildLampiranPppk($sheet, Gaj $gaj, array $rows, string $namaBank = ''): void
@@ -906,11 +916,12 @@ class GajPemindahbukuanExport
     }
 
     /**
-     * Kop surat: 6 rows, each merged from A to $lastCol.
+     * Kop surat: 6 rows konten + logo + garis bawah di row 7 (tebal) & row 8 (tipis).
+     * Row 7 & 8 sudah di-merge oleh caller, method ini hanya set konten + style.
      */
     private function setKopSurat($sheet, string $lastCol): void
     {
-        // Merge each kop row across all columns
+        // Merge each kop content row across all columns
         for ($i = 1; $i <= 6; $i++) {
             $sheet->mergeCells("A{$i}:{$lastCol}{$i}");
         }
@@ -920,13 +931,35 @@ class GajPemindahbukuanExport
         $sheet->setCellValue('A3', 'Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352');
         $sheet->setCellValue('A4', 'Telpon ( 0286 ) 3304957');
         $sheet->setCellValue('A5', 'Laman: kecamatanwatumalang.wonosobokab.go.id');
-        $sheet->setCellValue('A6', 'Pos-el watumalang08@gmail.com');
+        $sheet->setCellValue('A6', 'Pos-el: watumalang08@gmail.com');
 
         // Style: center, bold for header lines
         $sheet->getStyle("A1:{$lastCol}6")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle("A3:{$lastCol}6")->getFont()->setSize(9);
+
+        // Row heights for kop
+        $sheet->getRowDimension(1)->setRowHeight(14);
+        $sheet->getRowDimension(2)->setRowHeight(18);
+
+        // Garis bawah kop: border bawah tebal di row 6, border bawah tipis di row 7
+        $sheet->getStyle("A6:{$lastCol}6")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM);
+        $sheet->getStyle("A7:{$lastCol}7")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+
+        // Logo kabupaten (float, tidak menggeser row)
+        $logoPath = public_path('images/logo-wonosobo.png');
+        if (file_exists($logoPath)) {
+            $drawing = new Drawing();
+            $drawing->setName('Logo Wonosobo');
+            $drawing->setDescription('Logo Kabupaten Wonosobo');
+            $drawing->setPath($logoPath);
+            $drawing->setHeight(70);
+            $drawing->setCoordinates('A1');
+            $drawing->setOffsetX(4);
+            $drawing->setOffsetY(2);
+            $drawing->setWorksheet($sheet);
+        }
     }
 
     /**
