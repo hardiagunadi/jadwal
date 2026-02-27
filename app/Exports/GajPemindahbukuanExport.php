@@ -355,31 +355,50 @@ class GajPemindahbukuanExport
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // PPPK: 3 sheets
+    // PPPK: 4 sheets
     // ═══════════════════════════════════════════════════════════════════════════
 
     private function buildPppk(Spreadsheet $spreadsheet, Gaj $gaj): void
     {
         $rows = $this->buildRows($gaj);
 
-        $sumBruto  = array_sum(array_column($rows, 'bruto'));
-        $sumBaznas = array_sum(array_column($rows, 'baznas'));
-        $sumKorpri = array_sum(array_column($rows, 'korpri'));
-        $sumBersih = array_sum(array_column($rows, 'bersih'));
-
-        // Sheet 1: BANK JATENG
-        $bankJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BANK JATENG');
-        $spreadsheet->addSheet($bankJateng);
-        $this->buildBankJatengPppk($bankJateng, $gaj, $sumBersih + $sumBaznas, $sumBersih, $sumBaznas);
-
-        // Sheet 2: BAWON
-        $bawon = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BAWON');
-        $spreadsheet->addSheet($bawon);
-        $this->buildBawonPppk($bawon, $gaj, $sumBruto + $sumBaznas + $sumKorpri, $sumBersih, $sumBaznas, $sumKorpri);
-
-        // Pisah rows per bank
+        // Pisah rows per bank lebih dulu
         $rowsJateng   = array_values(array_filter($rows, fn ($r) => ($r['kode_bank'] ?? '') === 'jateng'));
         $rowsWonosobo = array_values(array_filter($rows, fn ($r) => ($r['kode_bank'] ?? '') === 'wonosobo'));
+
+        // Sums khusus Bank Jateng
+        $sumBrutoJateng  = array_sum(array_column($rowsJateng, 'bruto'));
+        $sumBaznasJateng = array_sum(array_column($rowsJateng, 'baznas'));
+        $sumKorpriJateng = array_sum(array_column($rowsJateng, 'korpri'));
+        $sumBersihJateng = array_sum(array_column($rowsJateng, 'bersih'));
+
+        // Sums khusus Bank Wonosobo
+        $sumBrutoWonosobo  = array_sum(array_column($rowsWonosobo, 'bruto'));
+        $sumBaznasWonosobo = array_sum(array_column($rowsWonosobo, 'baznas'));
+        $sumKorpriWonosobo = array_sum(array_column($rowsWonosobo, 'korpri'));
+        $sumBersihWonosobo = array_sum(array_column($rowsWonosobo, 'bersih'));
+
+        // Sums gabungan (semua pegawai) untuk surat Bank Jateng
+        $sumBaznasAll = $sumBaznasJateng + $sumBaznasWonosobo;
+        $sumKorpriAll = $sumKorpriJateng + $sumKorpriWonosobo;
+        $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasAll + $sumKorpriAll;
+
+        // Sheet 1: BANK JATENG — surat ke Bank Jateng
+        $bankJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BANK JATENG');
+        $spreadsheet->addSheet($bankJateng);
+        $this->buildBankJatengPppk(
+            $bankJateng, $gaj,
+            $totalSuratJateng,
+            $sumBersihJateng,
+            $sumBersihWonosobo,
+            $sumBaznasAll,
+            $sumKorpriAll
+        );
+
+        // Sheet 2: BAWON — surat ke Bank Wonosobo
+        $bawon = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BAWON');
+        $spreadsheet->addSheet($bawon);
+        $this->buildBawonPppk($bawon, $gaj, $sumBersihWonosobo);
 
         // Sheet 3: LAMPIRAN BANK JATENG
         $lampiranJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'LAMPIRAN JATENG');
@@ -392,11 +411,19 @@ class GajPemindahbukuanExport
         $this->buildLampiranPppk($lampiranWonosobo, $gaj, $rowsWonosobo, 'Bank Wonosobo');
     }
 
-    private function buildBankJatengPppk($sheet, Gaj $gaj, int $total, int $sumBersih, int $sumBaznas): void
-    {
-        $bulanNama = self::BULAN_NAMES[$gaj->bulan] ?? '';
-        $tahun     = $gaj->tahun;
-        $tanggal   = $this->tanggalSurat($gaj->bulan, $gaj->tahun);
+    private function buildBankJatengPppk(
+        $sheet,
+        Gaj $gaj,
+        int $total,
+        int $sumBersihJateng,
+        int $sumBersihWonosobo,
+        int $sumBaznas,
+        int $sumKorpri
+    ): void {
+        $bulanNama   = self::BULAN_NAMES[$gaj->bulan] ?? '';
+        $tahun       = $gaj->tahun;
+        $tanggal     = $this->tanggalSurat($gaj->bulan, $gaj->tahun);
+        $hasWonosobo = $sumBersihWonosobo > 0;
 
         // ── Page Setup ──────────────────────────────────────────────────────
         $this->setPageSetupSurat($sheet, 0.748, 0, 0.83, 0.61);
@@ -430,15 +457,15 @@ class GajPemindahbukuanExport
         $sheet->mergeCells('A12:F12');
         $sheet->mergeCells('A13:F13');
         $sheet->setCellValue('A11', 'Nomor     :  900/');
-        $sheet->setCellValue('A12', 'Lampiran :  1 (satu) Lembar');
+        $sheet->setCellValue('A12', 'Lampiran :  2 (dua) Lembar');
         $sheet->setCellValue('A13', 'Perihal     : Pemindahbukuan Gaji PPPK Bulan ' . $bulanNama . ' ' . $tahun);
 
-        // ── Addressee ───────────────────────────────────────────────────────
+        // ── Addressee: Bank Jateng ───────────────────────────────────────────
         $sheet->mergeCells('A15:F15');
         $sheet->mergeCells('A16:F16');
         $sheet->mergeCells('A17:F17');
-        $sheet->setCellValue('A15', 'Yth. Direktur PT. BPR BANK WONOSOBO');
-        $sheet->setCellValue('A16', 'PERSERODA');
+        $sheet->setCellValue('A15', 'Yth. Bpk Pimpinan Cabang BANK JATENG');
+        $sheet->setCellValue('A16', 'Cabang Wonosobo');
         $sheet->setCellValue('A17', 'di      -');
         $sheet->setCellValue('B18', 'WONOSOBO');
 
@@ -447,7 +474,7 @@ class GajPemindahbukuanExport
         $sheet->setCellValue('A21', 'Dengan hormat,');
 
         $sheet->mergeCells('A23:K23');
-        $sheet->setCellValue('A23', '         Sehubungan  dengan pembayaran  gaji  PPPK bulan ' . $bulanNama . ' ' . $tahun . ' bersama ini kami mohon');
+        $sheet->setCellValue('A23', '     Sehubungan dengan pembayaran gaji PPPK bulan ' . $bulanNama . ' ' . $tahun . ' bersama ini kami mohon');
         $sheet->setCellValue('A24', 'untuk dipindahbukukan dari rekening gaji kami :');
 
         $sheet->mergeCells('A25:K25');
@@ -479,61 +506,101 @@ class GajPemindahbukuanExport
         ];
         $sheet->getStyle('A29:K30')->applyFromArray($headerStyle);
 
-        // ── Data row 1: Gaji bersih (Bank Wonosobo) ─────────────────────────
-        $sheet->setCellValue('A31', '1');
-        $sheet->mergeCells('B31:E31');
-        $sheet->setCellValue('B31', 'PT BPR BANK WONOSOBO PERSERODA');
-        $sheet->mergeCells('F31:G31');
-        $sheet->setCellValue('F31', self::REK_GAJI);
-        $sheet->mergeCells('H31:I31');
-        $sheet->setCellValue('H31', 'RP/Gaji');
-        $sheet->mergeCells('J31:K31');
-        $sheet->setCellValue('J31', $sumBersih);
+        // ── Data rows (dynamic based on hasWonosobo) ─────────────────────────
+        $r = 31;
 
-        // ── Data row 2: BAZNAS ──────────────────────────────────────────────
-        $sheet->setCellValue('A32', '2');
-        $sheet->mergeCells('B32:E32');
-        $sheet->setCellValue('B32', 'BAZNAS');
-        $sheet->mergeCells('F32:G32');
-        $sheet->setCellValue('F32', self::REK_BAZNAS);
-        $sheet->mergeCells('H32:I32');
-        $sheet->setCellValue('H32', 'BAZNAS');
-        $sheet->mergeCells('J32:K32');
-        $sheet->setCellValue('J32', $sumBaznas);
+        // Row 1: Gaji bersih Bank Jateng
+        $sheet->setCellValue("A{$r}", '1');
+        $sheet->mergeCells("B{$r}:E{$r}");
+        $sheet->setCellValue("B{$r}", 'Gaji bersih masuk rek Bank Jateng (daftar terlampir)');
+        $sheet->mergeCells("F{$r}:G{$r}");
+        $sheet->setCellValue("F{$r}", self::REK_GAJI);
+        $sheet->mergeCells("H{$r}:I{$r}");
+        $sheet->setCellValue("H{$r}", 'Rp/Gaji');
+        $sheet->mergeCells("J{$r}:K{$r}");
+        $sheet->setCellValue("J{$r}", $sumBersihJateng);
+        $r++;
+
+        // Row 2 (conditional): Gaji transfer Bank Wonosobo
+        if ($hasWonosobo) {
+            $sheet->setCellValue("A{$r}", '2');
+            $sheet->mergeCells("B{$r}:E{$r}");
+            $sheet->setCellValue("B{$r}", 'Gaji bersih transfer ke Bank Wonosobo');
+            $sheet->mergeCells("F{$r}:G{$r}");
+            $sheet->setCellValue("F{$r}", '-');
+            $sheet->mergeCells("H{$r}:I{$r}");
+            $sheet->setCellValue("H{$r}", 'Rp/Gaji');
+            $sheet->mergeCells("J{$r}:K{$r}");
+            $sheet->setCellValue("J{$r}", $sumBersihWonosobo);
+            $r++;
+        }
+
+        // BAZNAS row
+        $noRow = $hasWonosobo ? 3 : 2;
+        $sheet->setCellValue("A{$r}", (string) $noRow);
+        $sheet->mergeCells("B{$r}:E{$r}");
+        $sheet->setCellValue("B{$r}", 'BAZNAS');
+        $sheet->mergeCells("F{$r}:G{$r}");
+        $sheet->setCellValue("F{$r}", self::REK_BAZNAS);
+        $sheet->mergeCells("H{$r}:I{$r}");
+        $sheet->setCellValue("H{$r}", 'BAZNAS');
+        $sheet->mergeCells("J{$r}:K{$r}");
+        $sheet->setCellValue("J{$r}", $sumBaznas);
+        $r++;
+
+        // KORPRI row
+        $sheet->setCellValue("A{$r}", (string) ($noRow + 1));
+        $sheet->mergeCells("B{$r}:E{$r}");
+        $sheet->setCellValue("B{$r}", 'KORPRI KAB. WONOSOBO');
+        $sheet->mergeCells("F{$r}:G{$r}");
+        $sheet->setCellValue("F{$r}", self::REK_KORPRI);
+        $sheet->mergeCells("H{$r}:I{$r}");
+        $sheet->setCellValue("H{$r}", 'Bank Wonosobo');
+        $sheet->mergeCells("J{$r}:K{$r}");
+        $sheet->setCellValue("J{$r}", $sumKorpri);
+        $r++;
+
+        $lastDataRow = $r - 1;
 
         // ── Jumlah row ──────────────────────────────────────────────────────
-        $sheet->mergeCells('A33:G33');
-        $sheet->setCellValue('A33', 'Jumlah');
-        $sheet->mergeCells('H33:I33');
-        $sheet->mergeCells('J33:K33');
-        $sheet->setCellValue('J33', $total);
-        $sheet->getStyle('A33:K33')->getFont()->setBold(true);
+        $sheet->mergeCells("A{$r}:G{$r}");
+        $sheet->setCellValue("A{$r}", 'Jumlah');
+        $sheet->mergeCells("H{$r}:I{$r}");
+        $sheet->mergeCells("J{$r}:K{$r}");
+        $sheet->setCellValue("J{$r}", $total);
+        $sheet->getStyle("A{$r}:K{$r}")->getFont()->setBold(true);
+        $r++;
 
-        // ── Empty row 34 with borders ───────────────────────────────────────
-        $sheet->mergeCells('B34:E34');
-        $sheet->mergeCells('J34:K34');
+        // ── Empty row with borders ──────────────────────────────────────────
+        $sheet->mergeCells("B{$r}:E{$r}");
+        $sheet->mergeCells("J{$r}:K{$r}");
+        $emptyRow = $r;
+        $r++;
 
-        // ── Borders for data rows 31-34 ─────────────────────────────────────
-        $sheet->getStyle('A31:K34')->applyFromArray(self::BORDER_THIN);
+        // ── Borders for data + total + empty rows ───────────────────────────
+        $sheet->getStyle("A31:K{$emptyRow}")->applyFromArray(self::BORDER_THIN);
 
         // ── Number format & alignment ───────────────────────────────────────
-        $sheet->getStyle('J31:K33')->getNumberFormat()->setFormatCode('#,##0');
-        $sheet->getStyle('J31:K33')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('A31:A34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A33:G33')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $jumlahRow = $emptyRow - 1;
+        $sheet->getStyle("J31:K{$jumlahRow}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("J31:K{$jumlahRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("A31:A{$emptyRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A{$jumlahRow}:G{$jumlahRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── Closing text ────────────────────────────────────────────────────
-        $sheet->setCellValue('A37', 'Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
-        $sheet->setCellValue('A38', 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
+        $closingRow = $emptyRow + 2;
+        $sheet->setCellValue("A{$closingRow}", '     Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
+        $sheet->setCellValue('A' . ($closingRow + 1), 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
 
-        $sheet->mergeCells('A40:K40');
-        $sheet->setCellValue('A40', 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
+        $closingRow2 = $closingRow + 3;
+        $sheet->mergeCells("A{$closingRow2}:K{$closingRow2}");
+        $sheet->setCellValue("A{$closingRow2}", 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
 
         // ── TTD ─────────────────────────────────────────────────────────────
-        $this->setTtdSurat($sheet, 42, 'K');
+        $this->setTtdSurat($sheet, $closingRow2 + 2, 'K');
     }
 
-    private function buildBawonPppk($sheet, Gaj $gaj, int $total, int $sumBersih, int $sumBaznas, int $sumKorpri): void
+    private function buildBawonPppk($sheet, Gaj $gaj, int $sumBersihWonosobo): void
     {
         $bulanNama = self::BULAN_NAMES[$gaj->bulan] ?? '';
         $tahun     = $gaj->tahun;
@@ -574,12 +641,12 @@ class GajPemindahbukuanExport
         $sheet->setCellValue('A12', 'Lampiran :  1 (satu) Lembar');
         $sheet->setCellValue('A13', 'Perihal     : Pemindahbukuan Gaji PPPK Bulan ' . $bulanNama . ' ' . $tahun);
 
-        // ── Addressee ───────────────────────────────────────────────────────
+        // ── Addressee: Bank Wonosobo ─────────────────────────────────────────
         $sheet->mergeCells('A15:F15');
         $sheet->mergeCells('A16:F16');
         $sheet->mergeCells('A17:F17');
-        $sheet->setCellValue('A15', 'Yth. Bpk Pimpinan Cabang BANK JATENG');
-        $sheet->setCellValue('A16', 'Cabang Wonosobo');
+        $sheet->setCellValue('A15', 'Yth. Direktur PT. BPR BANK WONOSOBO');
+        $sheet->setCellValue('A16', '(PERSERODA)');
         $sheet->setCellValue('A17', 'di      -');
         $sheet->setCellValue('B18', 'WONOSOBO');
 
@@ -588,14 +655,14 @@ class GajPemindahbukuanExport
         $sheet->setCellValue('A21', 'Dengan hormat,');
 
         $sheet->mergeCells('A23:K23');
-        $sheet->setCellValue('A23', '         Sehubungan  dengan pembayaran  gaji  PPPK bulan ' . $bulanNama . ' ' . $tahun . ' bersama ini kami mohon');
+        $sheet->setCellValue('A23', '     Sehubungan dengan pembayaran gaji PPPK bulan ' . $bulanNama . ' ' . $tahun . ' bersama ini kami mohon');
         $sheet->setCellValue('A24', 'untuk dipindahbukukan dari rekening gaji kami :');
 
         $sheet->mergeCells('A25:K25');
 
         $sheet->setCellValue('A26', 'Atas nama             : ');
         $sheet->setCellValue('D26', 'Bendahara Gaji Kantor Kecamatan Watumalang');
-        $sheet->setCellValue('A27', 'Jumlah                  : Rp. ' . number_format($total, 0, ',', '.'));
+        $sheet->setCellValue('A27', 'Jumlah                  : Rp. ' . number_format($sumBersihWonosobo, 0, ',', '.'));
         $sheet->setCellValue('A28', 'Untuk dipindahkan kedalam rekening di bawah ini :');
 
         // ── Table header (rows 29-30, 2-row merged) ─────────────────────────
@@ -620,69 +687,47 @@ class GajPemindahbukuanExport
         ];
         $sheet->getStyle('A29:K30')->applyFromArray($headerStyle);
 
-        // ── Data row 1: Gaji bersih ─────────────────────────────────────────
+        // ── Data row 1: PT BPR Bank Wonosobo ────────────────────────────────
         $sheet->setCellValue('A31', '1');
         $sheet->mergeCells('B31:E31');
-        $sheet->setCellValue('B31', 'Gaji bersih masuk rek (daft terlamp)');
+        $sheet->setCellValue('B31', 'PT BPR BANK WONOSOBO (PERSERODA) (daftar terlampir)');
         $sheet->mergeCells('F31:G31');
-        $sheet->setCellValue('F31', self::REK_GAJI);
+        $sheet->setCellValue('F31', '-');
         $sheet->mergeCells('H31:I31');
-        $sheet->setCellValue('H31', 'RP/Gaji');
+        $sheet->setCellValue('H31', 'Rp/Gaji');
         $sheet->mergeCells('J31:K31');
-        $sheet->setCellValue('J31', $sumBersih);
-
-        // ── Data row 2: BAZNAS ──────────────────────────────────────────────
-        $sheet->setCellValue('A32', '2');
-        $sheet->mergeCells('B32:E32');
-        $sheet->setCellValue('B32', 'BAZNAS');
-        $sheet->mergeCells('F32:G32');
-        $sheet->setCellValue('F32', self::REK_BAZNAS);
-        $sheet->mergeCells('H32:I32');
-        $sheet->setCellValue('H32', 'BAZNAS');
-        $sheet->mergeCells('J32:K32');
-        $sheet->setCellValue('J32', $sumBaznas);
-
-        // ── Data row 3: KORPRI ──────────────────────────────────────────────
-        $sheet->setCellValue('A33', '3');
-        $sheet->mergeCells('B33:E33');
-        $sheet->setCellValue('B33', 'KORPRI KAB. WONOSOBO');
-        $sheet->mergeCells('F33:G33');
-        $sheet->setCellValue('F33', self::REK_KORPRI);
-        $sheet->mergeCells('H33:I33');
-        $sheet->setCellValue('H33', 'Bank Wonosobo');
-        $sheet->mergeCells('J33:K33');
-        $sheet->setCellValue('J33', $sumKorpri);
+        $sheet->setCellValue('J31', $sumBersihWonosobo);
 
         // ── Jumlah row ──────────────────────────────────────────────────────
-        $sheet->mergeCells('A34:G34');
-        $sheet->setCellValue('A34', 'Jumlah');
-        $sheet->mergeCells('H34:I34');
-        $sheet->mergeCells('J34:K34');
-        $sheet->setCellValue('J34', $total);
-        $sheet->getStyle('A34:K34')->getFont()->setBold(true);
+        $sheet->mergeCells('A32:G32');
+        $sheet->setCellValue('A32', 'Jumlah');
+        $sheet->mergeCells('H32:I32');
+        $sheet->mergeCells('J32:K32');
+        $sheet->setCellValue('J32', $sumBersihWonosobo);
+        $sheet->getStyle('A32:K32')->getFont()->setBold(true);
 
-        // ── Empty row 35 with borders ───────────────────────────────────────
-        $sheet->mergeCells('B35:E35');
-        $sheet->mergeCells('J35:K35');
+        // ── Empty row 33 with borders ───────────────────────────────────────
+        $sheet->mergeCells('B33:E33');
+        $sheet->mergeCells('J33:K33');
 
-        // ── Borders for data rows 31-35 ─────────────────────────────────────
-        $sheet->getStyle('A31:K35')->applyFromArray(self::BORDER_THIN);
+        // ── Borders for data rows 31-33 ─────────────────────────────────────
+        $sheet->getStyle('A31:K33')->applyFromArray(self::BORDER_THIN);
 
         // ── Number format & alignment ───────────────────────────────────────
-        $sheet->getStyle('J31:K34')->getNumberFormat()->setFormatCode('#,##0');
-        $sheet->getStyle('J31:K34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-        $sheet->getStyle('A31:A35')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A34:G34')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('J31:K32')->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('J31:K32')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('A31:A33')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A32:G32')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // ── Closing text ────────────────────────────────────────────────────
-        $sheet->setCellValue('A39', 'Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
-        $sheet->setCellValue('A40', 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
+        $sheet->setCellValue('A37', '     Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami');
+        $sheet->setCellValue('A38', 'akan tanggung jawab atas kesalahan penyampaian data tersebut diatas');
 
-        $sheet->mergeCells('A42:K42');
-        $sheet->setCellValue('A42', 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
+        $sheet->mergeCells('A40:K40');
+        $sheet->setCellValue('A40', 'Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih');
 
         // ── TTD ─────────────────────────────────────────────────────────────
-        $this->setTtdSurat($sheet, 44, 'K');
+        $this->setTtdSurat($sheet, 42, 'K');
     }
 
     private function buildLampiranPppk($sheet, Gaj $gaj, array $rows, string $namaBank = ''): void
