@@ -65,10 +65,9 @@ class SuratKeluarService
         $tanggalSurat = $context['tanggal_surat'] ?? $master->tanggal_surat ?? now();
 
         return DB::transaction(function () use ($master, $perihal, $context, $tahun, $kodeId, $nomorUrut, $tanggalSurat) {
+            // Hitung semua sisipan dari master ini (lintas kode), agar nomor sisipan unik per master
             $maxSisipan = SuratKeluar::query()
-                ->where('kode_surat_id', $kodeId)
-                ->where('tahun', $tahun)
-                ->where('nomor_urut', $nomorUrut)
+                ->where('master_id', $master->id)
                 ->lockForUpdate()
                 ->max('nomor_sisipan');
 
@@ -135,10 +134,9 @@ class SuratKeluarService
 
     public function previewNextSisipanNumber(SuratKeluar $master): int
     {
+        // Hitung lintas kode agar nomor sisipan unik per master
         $maxSisipan = SuratKeluar::query()
-            ->where('kode_surat_id', $master->kode_surat_id)
-            ->where('tahun', $master->tahun)
-            ->where('nomor_urut', $master->nomor_urut)
+            ->where('master_id', $master->id)
             ->max('nomor_sisipan');
 
         return ((int) $maxSisipan) + 1;
@@ -159,11 +157,9 @@ class SuratKeluarService
                     return '-';
                 }
 
-                // Hitung next sisipan untuk kombinasi kode custom + nomor master
+                // Hitung lintas kode agar nomor sisipan unik per master
                 $maxSisipan = SuratKeluar::query()
-                    ->where('kode_surat_id', $kodeSuratId)
-                    ->where('tahun', $master->tahun)
-                    ->where('nomor_urut', $master->nomor_urut)
+                    ->where('master_id', $master->id)
                     ->max('nomor_sisipan');
 
                 $next = ((int) $maxSisipan) + 1;

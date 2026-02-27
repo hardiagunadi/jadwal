@@ -377,10 +377,19 @@ class GajPemindahbukuanExport
         $spreadsheet->addSheet($bawon);
         $this->buildBawonPppk($bawon, $gaj, $sumBruto + $sumBaznas + $sumKorpri, $sumBersih, $sumBaznas, $sumKorpri);
 
-        // Sheet 3: LAMPIRAN
-        $lampiran = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'LAMPIRAN');
-        $spreadsheet->addSheet($lampiran);
-        $this->buildLampiranPppk($lampiran, $gaj, $rows);
+        // Pisah rows per bank
+        $rowsJateng   = array_values(array_filter($rows, fn ($r) => ($r['kode_bank'] ?? '') === 'jateng'));
+        $rowsWonosobo = array_values(array_filter($rows, fn ($r) => ($r['kode_bank'] ?? '') === 'wonosobo'));
+
+        // Sheet 3: LAMPIRAN BANK JATENG
+        $lampiranJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'LAMPIRAN JATENG');
+        $spreadsheet->addSheet($lampiranJateng);
+        $this->buildLampiranPppk($lampiranJateng, $gaj, $rowsJateng, 'Bank Jateng');
+
+        // Sheet 4: LAMPIRAN BANK WONOSOBO
+        $lampiranWonosobo = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'LAMPIRAN WONOSOBO');
+        $spreadsheet->addSheet($lampiranWonosobo);
+        $this->buildLampiranPppk($lampiranWonosobo, $gaj, $rowsWonosobo, 'Bank Wonosobo');
     }
 
     private function buildBankJatengPppk($sheet, Gaj $gaj, int $total, int $sumBersih, int $sumBaznas): void
@@ -676,7 +685,7 @@ class GajPemindahbukuanExport
         $this->setTtdSurat($sheet, 44, 'K');
     }
 
-    private function buildLampiranPppk($sheet, Gaj $gaj, array $rows): void
+    private function buildLampiranPppk($sheet, Gaj $gaj, array $rows, string $namaBank = ''): void
     {
         $bulanNama = self::BULAN_NAMES[$gaj->bulan] ?? '';
 
@@ -699,7 +708,8 @@ class GajPemindahbukuanExport
         $sheet->mergeCells('A3:H3');
         $sheet->setCellValue('A1', 'DAFTAR PENERIMAAN GAJI PPPK');
         $sheet->setCellValue('A2', strtoupper($gaj->nama_satker));
-        $sheet->setCellValue('A3', 'BULAN ' . strtoupper($bulanNama) . ' ' . $gaj->tahun);
+        $bankLabel = $namaBank !== '' ? ' - ' . strtoupper($namaBank) : '';
+        $sheet->setCellValue('A3', 'BULAN ' . strtoupper($bulanNama) . ' ' . $gaj->tahun . $bankLabel);
 
         // Title style: bold, center
         $sheet->getStyle('A1:H1')->getFont()->setBold(true);
