@@ -254,8 +254,8 @@
         if ($isPns) {
             $totalPns = $sumBersih + $sumBaznas + $sumKorpri;
         } else {
-            // Bank Jateng surat: gaji Jateng + transfer ke Bank Wonosobo + BAZNAS all + KORPRI all
-            $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznas + $sumKorpri;
+            // Bank Jateng surat: gaji Jateng + transfer ke Bank Wonosobo + BAZNAS Jateng + KORPRI Jateng
+            $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasJateng + $sumKorpriJateng;
             // Bank Wonosobo surat: gaji Wonosobo + BAZNAS Wonosobo + KORPRI Wonosobo
             $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
         }
@@ -583,14 +583,14 @@
                     <td class="l">BAZNAS</td>
                     <td>{{ $REK_BAZNAS }}</td>
                     <td>BAZNAS</td>
-                    <td class="r">{{ $rp($sumBaznas) }}</td>
+                    <td class="r">{{ $rp($sumBaznasJateng) }}</td>
                 </tr>
                 <tr>
                     <td>{{ $no + 1 }}</td>
                     <td class="l">KORPRI KAB. WONOSOBO</td>
                     <td>{{ $REK_KORPRI }}</td>
                     <td>Bank Wonosobo</td>
-                    <td class="r">{{ $rp($sumKorpri) }}</td>
+                    <td class="r">{{ $rp($sumKorpriJateng) }}</td>
                 </tr>
                 <tr class="b">
                     <td class="b" colspan="4"><strong>Jumlah</strong></td>

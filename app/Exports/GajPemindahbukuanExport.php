@@ -375,10 +375,8 @@ class GajPemindahbukuanExport
         $sumKorpriWonosobo = array_sum(array_column($rowsWonosobo, 'korpri'));
         $sumBersihWonosobo = array_sum(array_column($rowsWonosobo, 'bersih'));
 
-        // Sums gabungan (semua pegawai) untuk surat Bank Jateng
-        $sumBaznasAll = $sumBaznasJateng + $sumBaznasWonosobo;
-        $sumKorpriAll = $sumKorpriJateng + $sumKorpriWonosobo;
-        $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasAll + $sumKorpriAll;
+        // Total surat Jateng: gaji Jateng + transfer ke Wonosobo + BAZNAS Jateng + KORPRI Jateng
+        $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasJateng + $sumKorpriJateng;
 
         // Sheet 1: BANK JATENG — surat ke Bank Jateng
         $bankJateng = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, 'BANK JATENG');
@@ -388,8 +386,8 @@ class GajPemindahbukuanExport
             $totalSuratJateng,
             $sumBersihJateng,
             $sumBersihWonosobo,
-            $sumBaznasAll,
-            $sumKorpriAll
+            $sumBaznasJateng,
+            $sumKorpriJateng
         );
 
         // Sheet 2: BAWON — surat ke Bank Wonosobo

@@ -181,25 +181,40 @@ class GajExportController extends Controller
             $rowsJateng   = array_values(array_filter($allRows, fn ($r) => ($r['kode_bank'] ?? '') !== 'wonosobo'));
             $rowsWonosobo = array_values(array_filter($allRows, fn ($r) => ($r['kode_bank'] ?? '') === 'wonosobo'));
 
+            $sumBaznasJateng  = array_sum(array_column($rowsJateng, 'baznas'));
+            $sumKorpriJateng  = array_sum(array_column($rowsJateng, 'korpri'));
+            $sumBersihJateng  = array_sum(array_column($rowsJateng, 'bersih'));
+            $sumBaznasWonosobo = array_sum(array_column($rowsWonosobo, 'baznas'));
+            $sumKorpriWonosobo = array_sum(array_column($rowsWonosobo, 'korpri'));
+            $sumBersihWonosobo = array_sum(array_column($rowsWonosobo, 'bersih'));
+
+            // Total surat Jateng: gaji Jateng + transfer ke Wonosobo + BAZNAS Jateng + KORPRI Jateng
+            $totalSuratJateng  = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasJateng + $sumKorpriJateng;
+            // Total surat Wonosobo: gaji Wonosobo + BAZNAS Wonosobo + KORPRI Wonosobo
+            $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
+
             $viewData = [
                 'rows'          => $allRows,
                 'rowsJateng'    => $rowsJateng,
                 'rowsWonosobo'  => $rowsWonosobo,
-                // Totals for all (used in Bank Jateng surat)
+                // Totals for all
                 'sumBruto'      => array_sum(array_column($allRows, 'bruto')),
                 'sumBaznas'     => array_sum(array_column($allRows, 'baznas')),
                 'sumKorpri'     => array_sum(array_column($allRows, 'korpri')),
                 'sumBersih'     => array_sum(array_column($allRows, 'bersih')),
                 // Bank Jateng subtotals
-                'sumBrutoJateng'  => array_sum(array_column($rowsJateng, 'bruto')),
-                'sumBaznasJateng' => array_sum(array_column($rowsJateng, 'baznas')),
-                'sumKorpriJateng' => array_sum(array_column($rowsJateng, 'korpri')),
-                'sumBersihJateng' => array_sum(array_column($rowsJateng, 'bersih')),
+                'sumBrutoJateng'    => array_sum(array_column($rowsJateng, 'bruto')),
+                'sumBaznasJateng'   => $sumBaznasJateng,
+                'sumKorpriJateng'   => $sumKorpriJateng,
+                'sumBersihJateng'   => $sumBersihJateng,
                 // Bank Wonosobo subtotals
                 'sumBrutoWonosobo'  => array_sum(array_column($rowsWonosobo, 'bruto')),
-                'sumBaznasWonosobo' => array_sum(array_column($rowsWonosobo, 'baznas')),
-                'sumKorpriWonosobo' => array_sum(array_column($rowsWonosobo, 'korpri')),
-                'sumBersihWonosobo' => array_sum(array_column($rowsWonosobo, 'bersih')),
+                'sumBaznasWonosobo' => $sumBaznasWonosobo,
+                'sumKorpriWonosobo' => $sumKorpriWonosobo,
+                'sumBersihWonosobo' => $sumBersihWonosobo,
+                // Total per surat
+                'totalSuratJateng'  => $totalSuratJateng,
+                'totalSuratWonosobo' => $totalSuratWonosobo,
             ];
         }
 
