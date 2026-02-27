@@ -195,8 +195,7 @@ class SuratKeluarResource extends Resource
                         ->preload()
                         ->placeholder('Ketik kode atau keterangan')
                         ->required()
-                        ->visibleOn('edit')
-                        ->visible(fn () => auth()->user()?->isAdmin() === true || auth()->user()?->isArsiparis() === true),
+                        ->visibleOn('edit'),
 
                     DatePicker::make('tanggal_surat')
                         ->label('Tanggal Surat')
