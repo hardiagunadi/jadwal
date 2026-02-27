@@ -150,6 +150,54 @@ class SuratKeluarResource extends Resource
                         ->rows(3)
                         ->required(),
 
+                    Select::make('kode_surat_id')
+                        ->label('Kode Klasifikasi')
+                        ->options(fn () => KodeSurat::query()
+                            ->orderBy('kode')
+                            ->limit(50)
+                            ->get()
+                            ->mapWithKeys(fn (KodeSurat $kode) => [
+                                $kode->id => $kode->kode . ' - ' . $kode->keterangan,
+                            ])
+                            ->all())
+                        ->getSearchResultsUsing(function (string $search): array {
+                            $search = trim($search);
+
+                            return KodeSurat::query()
+                                ->when($search !== '', function ($query) use ($search) {
+                                    $query->where(function ($builder) use ($search) {
+                                        $builder
+                                            ->where('kode', 'like', '%' . $search . '%')
+                                            ->orWhere('keterangan', 'like', '%' . $search . '%');
+                                    });
+                                })
+                                ->orderBy('kode')
+                                ->limit(50)
+                                ->get()
+                                ->mapWithKeys(fn (KodeSurat $kode) => [
+                                    $kode->id => $kode->kode . ' - ' . $kode->keterangan,
+                                ])
+                                ->all();
+                        })
+                        ->getOptionLabelUsing(function ($value): ?string {
+                            if (! $value) {
+                                return null;
+                            }
+
+                            $kode = KodeSurat::find($value);
+                            if (! $kode) {
+                                return null;
+                            }
+
+                            return $kode->kode . ' - ' . $kode->keterangan;
+                        })
+                        ->searchable()
+                        ->preload()
+                        ->placeholder('Ketik kode atau keterangan')
+                        ->required()
+                        ->visibleOn('edit')
+                        ->visible(fn () => auth()->user()?->isAdmin() === true || auth()->user()?->isArsiparis() === true),
+
                     DatePicker::make('tanggal_surat')
                         ->label('Tanggal Surat')
                         ->required()
