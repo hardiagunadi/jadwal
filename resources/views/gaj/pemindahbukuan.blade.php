@@ -782,7 +782,7 @@
             <tbody>
                 <tr>
                     <td>1</td>
-                    <td class="l">Gaji bersih transfer ke Bank Wonosobo <i>(daftar terlampir)</i></td>
+                    <td class="l">PT BPR BANK WONOSOBO PERSERODA</td>
                     <td>-</td>
                     <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
