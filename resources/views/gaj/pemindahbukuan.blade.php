@@ -254,8 +254,8 @@
         if ($isPns) {
             $totalPns = $sumBersih + $sumBaznas + $sumKorpri;
         } else {
-            // Bank Jateng surat: gaji Jateng + transfer ke Bank Wonosobo + BAZNAS Jateng + KORPRI Jateng
-            $totalSuratJateng = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasJateng + $sumKorpriJateng;
+            // Bank Jateng surat: gaji Jateng + BAZNAS Jateng + KORPRI Jateng
+            $totalSuratJateng = $sumBersihJateng + $sumBaznasJateng + $sumKorpriJateng;
             // Bank Wonosobo surat: gaji Wonosobo + BAZNAS Wonosobo + KORPRI Wonosobo
             $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
         }
@@ -568,25 +568,15 @@
                     <td>Rp/Gaji</td>
                     <td class="r">{{ $rp($sumBersihJateng) }}</td>
                 </tr>
-                @if (count($rowsWonosobo) > 0)
                 <tr>
                     <td>2</td>
-                    <td class="l">Gaji bersih transfer ke Bank Wonosobo</td>
-                    <td>-</td>
-                    <td>Rp/Gaji</td>
-                    <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
-                </tr>
-                @endif
-                @php $no = count($rowsWonosobo) > 0 ? 3 : 2; @endphp
-                <tr>
-                    <td>{{ $no }}</td>
                     <td class="l">BAZNAS</td>
                     <td>{{ $REK_BAZNAS }}</td>
                     <td>BAZNAS</td>
                     <td class="r">{{ $rp($sumBaznasJateng) }}</td>
                 </tr>
                 <tr>
-                    <td>{{ $no + 1 }}</td>
+                    <td>3</td>
                     <td class="l">KORPRI KAB. WONOSOBO</td>
                     <td>{{ $REK_KORPRI }}</td>
                     <td>Bank Wonosobo</td>
@@ -707,10 +697,155 @@
         </div>
     </div>
 
-    {{-- ============================================================ --}}
-    {{-- PPPK PAGE 2B: LAMPIRAN BANK WONOSOBO (untuk surat Jateng)   --}}
-    {{-- ============================================================ --}}
     @if (count($rowsWonosobo) > 0)
+    {{-- ============================================================ --}}
+    {{-- PPPK PAGE 2B: SURAT KE BANK JATENG UNTUK NASABAH WONOSOBO   --}}
+    {{-- ============================================================ --}}
+    <div class="page">
+        {{-- Kop Surat --}}
+        <div class="kop">
+            <img src="{{ asset('images/logo-wonosobo.png') }}" alt="Logo Wonosobo" class="logo">
+            <h2>PEMERINTAH KABUPATEN WONOSOBO</h2>
+            <h1>KECAMATAN WATUMALANG</h1>
+            <div class="detail">
+                Jalan Jebeng Lintang Nomor 29 Watumalang Wonosobo, Jawa Tengah, 56352<br>
+                Telpon ( 0286 ) 3304957<br>
+                Laman: kecamatanwatumalang.wonosobokab.go.id<br>
+                Pos-el: watumalang08@gmail.com
+            </div>
+        </div>
+        <div class="kop-line"></div>
+        <div class="kop-line-inner"></div>
+
+        {{-- Tanggal --}}
+        <div class="date-right"><span class="tgl-cetak-label"></span></div>
+
+        {{-- Nomor / Lampiran / Perihal --}}
+        <table class="surat-info">
+            <tr>
+                <td class="label">Nomor</td>
+                <td class="sep">:</td>
+                <td>900/</td>
+            </tr>
+            <tr>
+                <td class="label">Lampiran</td>
+                <td class="sep">:</td>
+                <td>1 (satu) Lembar</td>
+            </tr>
+            <tr>
+                <td class="label">Perihal</td>
+                <td class="sep">:</td>
+                <td>Pemindahbukuan Gaji PPPK Bulan {{ $bulanNama }} {{ $gaj->tahun }}</td>
+            </tr>
+        </table>
+
+        {{-- Addressee --}}
+        <div class="addressee">
+            Yth. Bpk Pimpinan Cabang BANK JATENG<br>
+            Cabang Wonosobo<br>
+            di &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WONOSOBO
+        </div>
+
+        {{-- Body --}}
+        <div class="body-text">
+            Dengan hormat,<br><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sehubungan dengan pembayaran gaji PPPK bulan {{ $bulanNama }} {{ $gaj->tahun }} bersama ini kami mohon
+            untuk dipindahbukukan dari rekening gaji kami :<br><br>
+
+            <table class="surat-info" style="margin-bottom: 4px;">
+                <tr>
+                    <td class="label">Atas nama</td>
+                    <td class="sep">:</td>
+                    <td>Bendahara Gaji Kantor Kecamatan Watumalang</td>
+                </tr>
+                <tr>
+                    <td class="label">Jumlah</td>
+                    <td class="sep">:</td>
+                    <td>Rp. {{ $rp($totalSuratWonosobo) }}</td>
+                </tr>
+            </table>
+            Untuk dipindahkan kedalam rekening di bawah ini :
+        </div>
+
+        {{-- Tabel Pemindahbukuan --}}
+        <table class="data">
+            <thead>
+                <tr>
+                    <th style="width:30px;">No.</th>
+                    <th>NAMA REK</th>
+                    <th style="width:110px;">Nomor Rek</th>
+                    <th style="width:80px;">KET</th>
+                    <th style="width:120px;">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td class="l">Gaji bersih transfer ke Bank Wonosobo <i>(daftar terlampir)</i></td>
+                    <td>-</td>
+                    <td>Rp/Gaji</td>
+                    <td class="r">{{ $rp($sumBersihWonosobo) }}</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td class="l">BAZNAS</td>
+                    <td>{{ $REK_BAZNAS }}</td>
+                    <td>BAZNAS</td>
+                    <td class="r">{{ $rp($sumBaznasWonosobo) }}</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td class="l">KORPRI KAB. WONOSOBO</td>
+                    <td>{{ $REK_KORPRI }}</td>
+                    <td>Bank Wonosobo</td>
+                    <td class="r">{{ $rp($sumKorpriWonosobo) }}</td>
+                </tr>
+                <tr class="b">
+                    <td class="b" colspan="4"><strong>Jumlah</strong></td>
+                    <td class="r b"><strong>{{ $rp($totalSuratWonosobo) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        {{-- Closing text --}}
+        <div class="body-text" style="margin-top: 10px;">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Apabila dikemudian hari terjadi kesalahan penyampaian data gaji pegawai, maka kami
+            akan tanggung jawab atas kesalahan penyampaian data tersebut diatas<br><br>
+            Demikian yang dapat kami sampaikan, atas perhatiannya kami ucapkan terimakasih
+        </div>
+
+        {{-- TTD --}}
+        <div class="ttd-area">
+            <table>
+                <tr>
+                    <td style="width:50%;">Mengetahui,</td>
+                    <td style="width:50%;">Penyiap Dokumen Gaji</td>
+                </tr>
+                <tr>
+                    <td>{{ $jabatanCamat }}</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Kabupaten Wonosobo</td>
+                    <td></td>
+                </tr>
+                <tr style="height:50px;"><td></td><td></td></tr>
+                <tr>
+                    <td><span class="name">{{ $namaCamat }}</span></td>
+                    <td><span class="name">{{ $namaPenyiap }}</span></td>
+                </tr>
+                <tr>
+                    <td>{{ $nipCamat }}</td>
+                    <td>{{ $nipPenyiap }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- PPPK PAGE 2C: LAMPIRAN BANK WONOSOBO (untuk surat Jateng)   --}}
+    {{-- ============================================================ --}}
     <div class="page lampiran">
         <div class="lampiran-title">
             DAFTAR PENERIMAAN GAJI PPPK — BANK WONOSOBO<br>
@@ -780,9 +915,7 @@
             </table>
         </div>
     </div>
-    @endif
 
-    @if (count($rowsWonosobo) > 0)
     {{-- ============================================================ --}}
     {{-- PPPK PAGE 3: SURAT BANK WONOSOBO                             --}}
     {{-- ============================================================ --}}

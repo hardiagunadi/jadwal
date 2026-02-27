@@ -188,8 +188,8 @@ class GajExportController extends Controller
             $sumKorpriWonosobo = array_sum(array_column($rowsWonosobo, 'korpri'));
             $sumBersihWonosobo = array_sum(array_column($rowsWonosobo, 'bersih'));
 
-            // Total surat Jateng: gaji Jateng + transfer ke Wonosobo + BAZNAS Jateng + KORPRI Jateng
-            $totalSuratJateng  = $sumBersihJateng + $sumBersihWonosobo + $sumBaznasJateng + $sumKorpriJateng;
+            // Total surat Jateng: gaji Jateng + BAZNAS Jateng + KORPRI Jateng
+            $totalSuratJateng  = $sumBersihJateng + $sumBaznasJateng + $sumKorpriJateng;
             // Total surat Wonosobo: gaji Wonosobo + BAZNAS Wonosobo + KORPRI Wonosobo
             $totalSuratWonosobo = $sumBersihWonosobo + $sumBaznasWonosobo + $sumKorpriWonosobo;
 
