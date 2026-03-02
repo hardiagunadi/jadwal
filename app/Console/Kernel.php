@@ -31,6 +31,22 @@ class Kernel extends ConsoleKernel
         $schedule->command('reminders:send-follow-up')->everyFiveMinutes();
         $schedule->command('kegiatan:escalate-disposisi')->everyFiveMinutes();
         $schedule->command('kegiatan:remind-disposisi-h-1')->dailyAt('17:00');
+
+        // Clear laravel.log setiap hari jam 00:00
+        $schedule->call(function () {
+            $path = storage_path('logs/laravel.log');
+            if (file_exists($path)) {
+                file_put_contents($path, '');
+            }
+        })->dailyAt('00:00')->name('clear-laravel-log')->withoutOverlapping();
+
+        // Clear scheduler.log setiap 7 hari (Senin) jam 00:00
+        $schedule->call(function () {
+            $path = storage_path('logs/scheduler.log');
+            if (file_exists($path)) {
+                file_put_contents($path, '');
+            }
+        })->weeklyOn(1, '00:00')->name('clear-scheduler-log')->withoutOverlapping();
     }
 
     /**
