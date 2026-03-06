@@ -25,3 +25,9 @@ Rules:
 * Do not modify vendor files
 * Use modern PHP syntax
 * Use Filament v4 syntax only
+
+ignore:
+* vendor/
+* node_modules/
+* storage/
+* bootstrap/cache/
