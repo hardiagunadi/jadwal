@@ -1,0 +1,27 @@
+This repository uses Laravel 12.
+
+Tech stack:
+
+* Laravel 12
+* PHP 8.3+
+* MariaDB / MySQL
+* Filament v4
+
+Project structure:
+
+* Controllers: app/Http/Controllers
+* Models: app/Models
+* Requests: app/Http/Requests
+* Filament resources: app/Filament
+* Routes: routes/web.php and routes/api.php
+* Migrations: database/migrations
+
+Rules:
+
+* Follow Laravel 12 best practices
+* Use Eloquent ORM instead of raw SQL
+* Use FormRequest validation
+* Follow MVC architecture
+* Do not modify vendor files
+* Use modern PHP syntax
+* Use Filament v4 syntax only

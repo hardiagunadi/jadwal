@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Lightweight Laravel installer (NO PHP/APACHE/MARIADB install)
-# Run with:
-#   sudo env DEPLOY_USER=deploy APP_USER=www-data APP_DIR=/var/www/jw-stable DOMAIN=example.com DB_NAME=... DB_USER=... DB_PASS='...' bash ./scripts/install-laravel-only.sh
-
+############################################
+# CONFIG (override via env)
+############################################
 APP_DIR="${APP_DIR:-/var/www/jadwal}"
 APP_USER="${APP_USER:-www-data}"
 APP_GROUP="${APP_GROUP:-www-data}"
-DEPLOY_USER="${DEPLOY_USER:-deploy}"
+DEPLOY_USER="${DEPLOY_USER:-sapawatu}"
 
 DOMAIN="${DOMAIN:-localhost}"
+
 DB_NAME="${DB_NAME:-}"
 DB_USER="${DB_USER:-}"
 DB_PASS="${DB_PASS:-}"
@@ -20,92 +20,138 @@ DB_PORT="${DB_PORT:-3306}"
 RUN_MIGRATIONS="${RUN_MIGRATIONS:-0}"
 CACHE_OPTIMIZE="${CACHE_OPTIMIZE:-1}"
 
-if [[ $EUID -eq 0 ]]; then
-  SUDO=""
-else
-  SUDO="sudo"
-fi
-
-command_exists() { command -v "$1" >/dev/null 2>&1; }
-
-need_cmd() {
-  if ! command_exists "$1"; then
-    echo "ERROR: command not found: $1" >&2
-    exit 1
+############################################
+# SAFE ROOT HANDLER
+############################################
+as_root() {
+  if [[ $EUID -eq 0 ]]; then
+    "$@"
+  else
+    sudo "$@"
   fi
 }
 
-echo "[0/6] Checking required commands..."
+run_as() {
+  local user="$1"
+  shift
+  sudo -u "$user" "$@"
+}
+
+############################################
+# CHECK REQUIREMENTS
+############################################
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || { echo "Missing command: $1"; exit 1; }
+}
+
+echo "[0/7] Checking requirements..."
 need_cmd php
 need_cmd composer
 need_cmd git
 
-echo "[1/6] Fixing repository ownership (deploy) + git safe.directory..."
-$SUDO chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${APP_DIR}" || true
-if [[ -d "${APP_DIR}/.git" ]]; then
-  $SUDO -u "${DEPLOY_USER}" git config --global --add safe.directory "${APP_DIR}" >/dev/null 2>&1 || true
-fi
+PHP_VERSION=$(php -r "echo PHP_VERSION;")
+echo "PHP Version: $PHP_VERSION"
 
-echo "[2/6] Preparing Laravel writable folders..."
-$SUDO mkdir -p "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
+############################################
+# FIX OWNERSHIP
+############################################
+echo "[1/7] Fixing ownership..."
+as_root chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${APP_DIR}" || true
 
-# storage/cache MUST be writable by web user
-$SUDO chown -R "${APP_USER}:${APP_GROUP}" "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
-$SUDO chmod -R 2775 "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
-$SUDO find "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache" -type f -exec chmod 664 {} \;
+############################################
+# WRITABLE FOLDERS
+############################################
+echo "[2/7] Preparing writable folders..."
+as_root mkdir -p "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
 
-# Optional ACL so deploy + www-data both can write
-if command_exists setfacl; then
-  $SUDO setfacl -R -m "u:${APP_USER}:rwX" -m "u:${DEPLOY_USER}:rwX" "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
-  $SUDO setfacl -dR -m "u:${APP_USER}:rwX" -m "u:${DEPLOY_USER}:rwX" "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
-fi
+as_root chown -R "${APP_USER}:${APP_GROUP}" \
+  "${APP_DIR}/storage" \
+  "${APP_DIR}/bootstrap/cache"
 
-echo "[3/6] Creating .env (if missing) and injecting basic settings..."
+as_root chmod -R 2775 \
+  "${APP_DIR}/storage" \
+  "${APP_DIR}/bootstrap/cache"
+
+as_root find "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache" \
+  -type f -exec chmod 664 {} \;
+
+############################################
+# ENV FILE
+############################################
+echo "[3/7] Preparing .env..."
+
 if [[ ! -f "${APP_DIR}/.env" && -f "${APP_DIR}/.env.example" ]]; then
   cp "${APP_DIR}/.env.example" "${APP_DIR}/.env"
 fi
 
-$SUDO chown "${DEPLOY_USER}:${DEPLOY_USER}" "${APP_DIR}/.env" 2>/dev/null || true
-$SUDO chmod 664 "${APP_DIR}/.env" 2>/dev/null || true
+as_root chown "${DEPLOY_USER}:${DEPLOY_USER}" "${APP_DIR}/.env" 2>/dev/null || true
+as_root chmod 664 "${APP_DIR}/.env" 2>/dev/null || true
 
 set_env() {
-  local key="$1"; local val="$2"
+  local key="$1"
+  local val="$2"
   [[ -z "$val" ]] && return 0
+
   if grep -qE "^${key}=" "${APP_DIR}/.env"; then
     sed -i "s|^${key}=.*|${key}=${val}|g" "${APP_DIR}/.env"
   else
-    printf "\n%s=%s\n" "${key}" "${val}" >> "${APP_DIR}/.env"
+    printf "\n%s=%s\n" "$key" "$val" >> "${APP_DIR}/.env"
   fi
 }
 
-set_env "APP_URL" "http://${DOMAIN}"
+set_env "APP_URL" "https://${DOMAIN}"
 set_env "DB_HOST" "${DB_HOST}"
 set_env "DB_PORT" "${DB_PORT}"
 set_env "DB_DATABASE" "${DB_NAME}"
 set_env "DB_USERNAME" "${DB_USER}"
-if [[ -n "${DB_PASS}" ]]; then
+
+if [[ -n "$DB_PASS" ]]; then
   set_env "DB_PASSWORD" "\"${DB_PASS}\""
 fi
 
-echo "[4/6] Installing Composer dependencies (as ${DEPLOY_USER})..."
+############################################
+# COMPOSER INSTALL
+############################################
+echo "[4/7] Installing composer dependencies..."
 cd "${APP_DIR}"
-$SUDO -u "${DEPLOY_USER}" composer install --no-dev --prefer-dist --optimize-autoloader
+run_as "${DEPLOY_USER}" composer install --no-dev --prefer-dist --optimize-autoloader
 
-echo "[5/6] Running artisan (key + caches)..."
-$SUDO -u "${DEPLOY_USER}" php artisan key:generate --force
-
-if [[ "${RUN_MIGRATIONS}" == "1" ]]; then
-  $SUDO -u "${DEPLOY_USER}" php artisan migrate --force || true
+############################################
+# DATABASE TEST
+############################################
+if [[ -n "$DB_NAME" && -n "$DB_USER" ]]; then
+  echo "[5/7] Testing database connection..."
+  if mysql -u"$DB_USER" -p"$DB_PASS" -h"$DB_HOST" -P"$DB_PORT" -e "USE $DB_NAME;" >/dev/null 2>&1; then
+    echo "Database connection OK"
+  else
+    echo "WARNING: Database connection failed (check credentials)"
+  fi
 fi
 
-if [[ "${CACHE_OPTIMIZE}" == "1" ]]; then
-  $SUDO -u "${DEPLOY_USER}" php artisan config:cache || true
-  $SUDO -u "${DEPLOY_USER}" php artisan route:cache || true
-  $SUDO -u "${DEPLOY_USER}" php artisan view:cache  || true
+############################################
+# ARTISAN COMMANDS
+############################################
+echo "[6/7] Running artisan..."
+run_as "${DEPLOY_USER}" php artisan key:generate --force
+
+if [[ "$RUN_MIGRATIONS" == "1" ]]; then
+  run_as "${DEPLOY_USER}" php artisan migrate --force || true
 fi
 
-echo "[6/6] Final permission check..."
-$SUDO -u "${APP_USER}" test -w "${APP_DIR}/storage" && echo "OK: ${APP_USER} can write storage"
-$SUDO -u "${APP_USER}" test -w "${APP_DIR}/bootstrap/cache" && echo "OK: ${APP_USER} can write bootstrap/cache"
+if [[ "$CACHE_OPTIMIZE" == "1" ]]; then
+  run_as "${DEPLOY_USER}" php artisan config:cache || true
+  run_as "${DEPLOY_USER}" php artisan route:cache || true
+  run_as "${DEPLOY_USER}" php artisan view:cache  || true
+fi
 
-echo "Done. (No PHP/Apache/MariaDB installation performed.)"
+############################################
+# FINAL CHECK
+############################################
+echo "[7/7] Permission validation..."
+if sudo -u "${APP_USER}" test -w "${APP_DIR}/storage"; then
+  echo "OK: ${APP_USER} can write storage"
+else
+  echo "ERROR: ${APP_USER} cannot write storage"
+fi
+
+echo "✅ Installation completed successfully."
