@@ -8,7 +8,6 @@ use App\Http\Controllers\PublicAgendaController;
 use App\Http\Controllers\PublicPejabatStatusController;
 use App\Http\Controllers\PublicLayananController;
 use App\Http\Controllers\WaGatewayWebhookController;
-use App\Http\Controllers\FilamentThemeController;
 use App\Http\Controllers\YieldPanelPreferenceController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\BanprovVerificationController;
@@ -98,10 +97,6 @@ Route::get('/webhook/schedules/new', [ScheduleController::class, 'create'])
     ->name('webhook.schedules.create');
 Route::post('/webhook/schedules', [ScheduleController::class, 'store'])
     ->name('webhook.schedules.store');
-
-Route::post('/admin/theme', [FilamentThemeController::class, 'update'])
-    ->middleware('auth:personil')
-    ->name('filament.theme');
 
 Route::post('/admin/yield-panel', [YieldPanelPreferenceController::class, 'update'])
     ->middleware('auth:personil')
